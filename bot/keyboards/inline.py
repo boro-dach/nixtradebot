@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 profile_menu = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -20,15 +20,29 @@ deposit_menu = InlineKeyboardMarkup(
 
 coins_menu = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="Bitcoin"), InlineKeyboardButton("Qtum")],
-        [InlineKeyboardButton(text="Ethereum"), InlineKeyboardButton("Tron")],
-        [InlineKeyboardButton(text="Litecoin"), InlineKeyboardButton("Ripple")],
-        [InlineKeyboardButton(text="Cardano"), InlineKeyboardButton("Solana")],
-        [InlineKeyboardButton(text="Luna"), InlineKeyboardButton("Doge")],
-        [InlineKeyboardButton(text="Polkadot"), InlineKeyboardButton("Avalanche")],
-        [InlineKeyboardButton(text="Uniswap"), InlineKeyboardButton("Aptos")],
-        [InlineKeyboardButton(text="Flow"), InlineKeyboardButton("EOS")],
-        [InlineKeyboardButton(text="Chainlink"), InlineKeyboardButton("Quant")],
-        [InlineKeyboardButton(text="Maker"), InlineKeyboardButton("Trump")],
+        [InlineKeyboardButton(text="Bitcoin", callback_data="btc"), InlineKeyboardButton(text="Qtum", callback_data="qtum")],
+        [InlineKeyboardButton(text="Ethereum", callback_data="eth"), InlineKeyboardButton(text="Tron", callback_data="tron")],
+        [InlineKeyboardButton(text="Litecoin", callback_data="ltc"), InlineKeyboardButton(text="Ripple", callback_data="ripple")],
+        [InlineKeyboardButton(text="Cardano", callback_data="cardano"), InlineKeyboardButton(text="Solana", callback_data="solano")],
+        [InlineKeyboardButton(text="Luna", callback_data="luna"), InlineKeyboardButton(text="Doge", callback_data="doge")],
+        [InlineKeyboardButton(text="Polkadot", callback_data="polkadot"), InlineKeyboardButton(text="Avalanche", callback_data="avalanche")],
+        [InlineKeyboardButton(text="Uniswap", callback_data="uni"), InlineKeyboardButton(text="Aptos", callback_data="aptos")],
+        [InlineKeyboardButton(text="Flow", callback_data="flow"), InlineKeyboardButton(text="EOS", callback_data="eos")],
+        [InlineKeyboardButton(text="Chainlink", callback_data="chain"), InlineKeyboardButton(text="Quant", callback_data="quant")],
+        [InlineKeyboardButton(text="Maker", callback_data="maker"), InlineKeyboardButton(text="Trump", callback_data="trump")],
+    ]
+)
+
+about_menu = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="📖 Условия", callback_data="terms"), InlineKeyboardButton(text="📜 Сертификат", callback_data="certificate")],
+        [InlineKeyboardButton(text="📚 Документация", callback_data="docs"), InlineKeyboardButton(text="Гарантия сервиса", callback_data="garancy")],
+        [InlineKeyboardButton(text="📈 Состояние сети", callback_data="network"), InlineKeyboardButton(text="⚙️ Реферальная система", callback_data="referal")]
+    ]
+)
+
+web_app_menu = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="🌐 Наш веб сайт", web_app=WebAppInfo(url="https://nixtradebot.vercel.app"))]
     ]
 )

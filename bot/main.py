@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import Bot, Dispatcher
-from handlers.inline import profile, deposit
+from handlers.inline import profile, deposit, options, about, webapp
 from handlers import start
 import os
 from dotenv import load_dotenv
@@ -14,6 +14,9 @@ async def main():
     dp.include_router(start.router)
     dp.include_router(profile.router)
     dp.include_router(deposit.router)
+    dp.include_router(options.router)
+    dp.include_router(about.router)
+    dp.include_router(webapp.router)
     
     await dp.start_polling(bot)
 
