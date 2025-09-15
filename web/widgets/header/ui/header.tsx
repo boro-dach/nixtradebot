@@ -1,5 +1,6 @@
 import { Button } from "@/shared/ui/button";
 import { Bell, Cog, Trophy } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 const Header = () => {
@@ -9,9 +10,14 @@ const Header = () => {
         <Trophy /> Конкурсы
       </Button>
       <div className="flex flex-row gap-2 items-center">
-        <Button variant={"secondary"} className="text-blue-600">
-          <Cog /> Настройки
-        </Button>
+        <Link href={"/settings"}>
+          <Button
+            variant={"secondary"}
+            className="text-blue-600 w-fit cursor-pointer"
+          >
+            <Cog /> Настройки
+          </Button>
+        </Link>
         <Button variant={"secondary"} className="text-blue-600">
           <Bell />
         </Button>
