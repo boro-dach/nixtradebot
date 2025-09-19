@@ -1,0 +1,2 @@
+currency = "RUB"
+language = "russian"

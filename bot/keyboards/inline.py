@@ -46,3 +46,28 @@ web_app_menu = InlineKeyboardMarkup(
         [InlineKeyboardButton(text="🌐 Наш веб сайт", web_app=WebAppInfo(url="https://nixtradebot.vercel.app"))]
     ]
 )
+
+settings_menu = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="🌐 Валюта 🌐", callback_data="currency")],
+        [InlineKeyboardButton(text="🇷🇺 Язык 🇺🇸", callback_data="language")],
+        [InlineKeyboardButton(text="🔙", callback_data="profile")]
+    ]
+)
+
+language_menu = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="🇺🇸 ENG", callback_data="english")],
+        [InlineKeyboardButton(text="🇷🇺 RUS", callback_data="russian")],
+        [InlineKeyboardButton(text="🔙", callback_data="profile")]
+    ]
+)
+
+currency_menu = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="🇷🇺 RUB", callback_data="rub")],
+        [InlineKeyboardButton(text="🇰🇿 KZT", callback_data="kzt")],
+        [InlineKeyboardButton(text="🇺🇦 UAH", callback_data="uah")],
+        [InlineKeyboardButton(text="🔙", callback_data="profile")]
+    ]
+)
