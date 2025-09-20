@@ -17,3 +17,10 @@ datasource db {
 model User {
   tgid Int @unique
 }
+
+model Admin {
+  id String @id @default(cuid())
+
+  login String
+  password String
+}

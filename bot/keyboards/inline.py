@@ -6,7 +6,7 @@ profile_menu = InlineKeyboardMarkup(
          InlineKeyboardButton(text="📤 Вывести", callback_data="withdraw")],
         [InlineKeyboardButton(text="🔐 Верификация", callback_data="verify"),
          InlineKeyboardButton(text="⚙️ Настройки", callback_data="settings")],
-        [InlineKeyboardButton(text="📂 Мои активы", callback_data="assets")]
+        [InlineKeyboardButton(text="📂 Мои активы", callback_data="actives")]
     ]
 )
 
@@ -68,6 +68,30 @@ currency_menu = InlineKeyboardMarkup(
         [InlineKeyboardButton(text="🇷🇺 RUB", callback_data="rub")],
         [InlineKeyboardButton(text="🇰🇿 KZT", callback_data="kzt")],
         [InlineKeyboardButton(text="🇺🇦 UAH", callback_data="uah")],
+        [InlineKeyboardButton(text="🔙", callback_data="profile")]
+    ]
+)
+
+actives_menu = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="Покупка", callback_data="buy"), 
+        InlineKeyboardButton(text="Продажа", callback_data="sell")],
+        [InlineKeyboardButton(text="🔙", callback_data="profile")]
+    ]
+)
+
+buy_menu = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="BTC", callback_data="buy_btc"), InlineKeyboardButton(text="ETH", callback_data="buy_eth"), InlineKeyboardButton(text="USDT", callback_data="buy_usdt")],
+        [InlineKeyboardButton(text="SHIB", callback_data="buy_shib"), InlineKeyboardButton(text="ATOM", callback_data="buy_atom")],
+        [InlineKeyboardButton(text="🔙", callback_data="profile")]
+    ]
+)
+
+sell_menu = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="BTC", callback_data="sell_btc"), InlineKeyboardButton(text="ETH", callback_data="sell_eth"), InlineKeyboardButton(text="USDT", callback_data="sell_usdt")],
+        [InlineKeyboardButton(text="SHIB", callback_data="sell_shib"), InlineKeyboardButton(text="ATOM", callback_data="sell_atom")],
         [InlineKeyboardButton(text="🔙", callback_data="profile")]
     ]
 )

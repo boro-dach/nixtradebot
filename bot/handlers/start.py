@@ -1,12 +1,18 @@
 from aiogram import Router, types
 from aiogram.filters import Command
 from keyboards.reply import main_menu
+from api.login import login
 
 router = Router()
 
-
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
+
+    tgid = message.from_user.id
+
+    login_result = await login(tgid)
+    print("Ответ api: ", login_result)
+
     await message.answer(
     "🔷 Добро пожаловать на криптовалютную биржу NIX TRADE!\n\n"
     "Мы рады приветствовать Вас на нашей платформе, где Вы можете "

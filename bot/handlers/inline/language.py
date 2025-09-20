@@ -15,6 +15,6 @@ async def set_currency(callback: types.CallbackQuery):
     g.language = callback.data.upper()
     await callback.answer(f"Язык изменён на {g.language} ✅")
     await callback.message.edit_text(
-        f"Текущая валюта: {g.language}",
+        f"Текущий язык: {g.language}",
         reply_markup=language_menu
     )
