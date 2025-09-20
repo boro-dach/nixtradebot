@@ -1,3 +1,5 @@
+"use client";
+
 import Deposit from "@/features/deposit/ui/deposit";
 import Help from "@/features/help/ui/help";
 import Trade from "@/features/trade/ui/trade";
