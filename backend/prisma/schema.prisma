@@ -14,8 +14,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Language {
+  RU
+  ENG
+}
+
 model User {
-  tgid Int @unique
+  tgid String @unique
+
+  language Language @default(RU)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
 }
 
 model Admin {

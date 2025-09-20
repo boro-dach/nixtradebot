@@ -1,6 +1,15 @@
-import { IsNumber } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
+import { Language } from 'generated/prisma';
 
 export class CreateDto {
-  @IsNumber()
-  tgid: number;
+  @IsString()
+  tgid: string;
+}
+
+export class ChangeLanguageDto {
+  @IsEnum(Language)
+  language: Language;
+
+  @IsString()
+  tgid: string;
 }

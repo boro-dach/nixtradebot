@@ -1,2 +1,2 @@
 currency = "RUB"
-language = "russian"
+language = "ru"

@@ -1,23 +1,21 @@
 from aiogram import Router, types
-from keyboards.inline import profile_menu
+from keyboards.inline import get_profile_menu
+from keyboards.translations import TEXTS
+from api.language import get_user_language
 
 router = Router()
 
-
 @router.callback_query(lambda c: c.data == "profile")
 async def back_to_profile_handler(callback: types.CallbackQuery):
-    text = (
-            "💼 Личный кабинет:\n\n"
-            "🔐 Верификация: ❌\n"
-            f"🆔 ID: {callback.message.from_user.id}\n"
-            "💰 Баланс: 0₽\n\n"
-            "📊 Статистика пользователя:\n"
-            "├ Всего сделок проведено: 0\n"
-            "├ Неудачных: 0\n"
-            "├ Удачных: 0\n"
-            "└ Выводов совершено 0 на сумму 0₽\n\n"
-            "Откройте двери в мир криптовалют вместе с NIX TRADE –"
-            "Вашим верным спутником в онлайн-трейдинге на финансовых рынках."
-    )
-    await callback.message.edit_text(text, reply_markup=profile_menu)
+    user_lang = get_user_language(callback.from_user.id)
+    text = TEXTS[user_lang]["profile"].format(user_id=callback.from_user.id)
+    keyboard = get_profile_menu()
+    await callback.message.edit_text(text, reply_markup=keyboard)
     await callback.answer()
+
+@router.message(lambda m: m.text == "💼 Личный кабинет")
+async def profile_handler(message: types.Message):
+    user_lang = get_user_language(message.from_user.id)
+    text = TEXTS[user_lang]["profile"].format(user_id=message.from_user.id)
+    keyboard = get_profile_menu()
+    await message.answer(text, reply_markup=keyboard)

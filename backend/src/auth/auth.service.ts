@@ -7,7 +7,7 @@ export class AuthService {
   constructor(private readonly userService: UserService) {}
 
   async login(dto: CreateDto) {
-    const oldUser = await this.userService.findById(dto.tgid);
+    const oldUser = await this.userService.findById(String(dto.tgid));
 
     if (!oldUser) {
       const user = this.userService.create(dto);

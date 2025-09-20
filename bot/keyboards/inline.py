@@ -1,97 +1,131 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from keyboards.translations import BUTTONS
 
-profile_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="💳 Пополнить", callback_data="deposit"),
-         InlineKeyboardButton(text="📤 Вывести", callback_data="withdraw")],
-        [InlineKeyboardButton(text="🔐 Верификация", callback_data="verify"),
-         InlineKeyboardButton(text="⚙️ Настройки", callback_data="settings")],
-        [InlineKeyboardButton(text="📂 Мои активы", callback_data="actives")]
-    ]
-)
+# Профиль
+def get_profile_menu(lang="ru"):
+    b = BUTTONS[lang]
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=b["deposit"], callback_data="deposit"),
+             InlineKeyboardButton(text=b["withdraw"], callback_data="withdraw")],
+            [InlineKeyboardButton(text=b["verify"], callback_data="verify"),
+             InlineKeyboardButton(text=b["settings"], callback_data="settings")],
+            [InlineKeyboardButton(text=b["actives"], callback_data="actives")]
+        ]
+    )
 
-deposit_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="💳 Пополнить через банковскую карту", callback_data="bankcard")],
-        [InlineKeyboardButton(text="💱 Пополнить криптовалютой", callback_data="crypto")],
-        [InlineKeyboardButton(text="🎁 Ввести промокод", callback_data="promocode")],
-    ]
-)
+# Пополнение
+def get_deposit_menu(lang="ru"):
+    b = BUTTONS[lang]
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=b["bankcard"], callback_data="bankcard")],
+            [InlineKeyboardButton(text=b["crypto"], callback_data="crypto")],
+            [InlineKeyboardButton(text=b["promocode"], callback_data="promocode")],
+        ]
+    )
 
-coins_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="Bitcoin", callback_data="btc"), InlineKeyboardButton(text="Qtum", callback_data="qtum")],
-        [InlineKeyboardButton(text="Ethereum", callback_data="eth"), InlineKeyboardButton(text="Tron", callback_data="tron")],
-        [InlineKeyboardButton(text="Litecoin", callback_data="ltc"), InlineKeyboardButton(text="Ripple", callback_data="ripple")],
-        [InlineKeyboardButton(text="Cardano", callback_data="cardano"), InlineKeyboardButton(text="Solana", callback_data="solano")],
-        [InlineKeyboardButton(text="Luna", callback_data="luna"), InlineKeyboardButton(text="Doge", callback_data="doge")],
-        [InlineKeyboardButton(text="Polkadot", callback_data="polkadot"), InlineKeyboardButton(text="Avalanche", callback_data="avalanche")],
-        [InlineKeyboardButton(text="Uniswap", callback_data="uni"), InlineKeyboardButton(text="Aptos", callback_data="aptos")],
-        [InlineKeyboardButton(text="Flow", callback_data="flow"), InlineKeyboardButton(text="EOS", callback_data="eos")],
-        [InlineKeyboardButton(text="Chainlink", callback_data="chain"), InlineKeyboardButton(text="Quant", callback_data="quant")],
-        [InlineKeyboardButton(text="Maker", callback_data="maker"), InlineKeyboardButton(text="Trump", callback_data="trump")],
+# Криптовалюты
+def get_coins_menu(lang="ru") -> InlineKeyboardMarkup:
+    coins = [
+        ["Bitcoin", "Qtum"], ["Ethereum", "Tron"], ["Litecoin", "Ripple"],
+        ["Cardano", "Solana"], ["Luna", "Doge"], ["Polkadot", "Avalanche"],
+        ["Uniswap", "Aptos"], ["Flow", "EOS"], ["Chainlink", "Quant"],
+        ["Maker", "Trump"]
     ]
-)
 
-about_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="📖 Условия", callback_data="terms"), InlineKeyboardButton(text="📜 Сертификат", callback_data="certificate")],
-        [InlineKeyboardButton(text="📚 Документация", callback_data="docs"), InlineKeyboardButton(text="Гарантия сервиса", callback_data="garancy")],
-        [InlineKeyboardButton(text="📈 Состояние сети", callback_data="network"), InlineKeyboardButton(text="⚙️ Реферальная система", callback_data="referal")]
-    ]
-)
+    # inline_keyboard должен быть списком списков кнопок
+    keyboard_buttons = []
+    for pair in coins:
+        row = [InlineKeyboardButton(text=coin, callback_data=coin.lower()) for coin in pair]
+        keyboard_buttons.append(row)
 
-web_app_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="🌐 Наш веб сайт", web_app=WebAppInfo(url="https://nixtradebot.vercel.app"))]
-    ]
-)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+    return keyboard
 
-settings_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="🌐 Валюта 🌐", callback_data="currency")],
-        [InlineKeyboardButton(text="🇷🇺 Язык 🇺🇸", callback_data="language")],
-        [InlineKeyboardButton(text="🔙", callback_data="profile")]
-    ]
-)
+# О платформе
+def get_about_menu(lang="ru"):
+    b = BUTTONS[lang]
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=b["terms"], callback_data="terms"),
+             InlineKeyboardButton(text=b["certificate"], callback_data="certificate")],
+            [InlineKeyboardButton(text=b["docs"], callback_data="docs"),
+             InlineKeyboardButton(text=b["garancy"], callback_data="garancy")],
+            [InlineKeyboardButton(text=b["network"], callback_data="network"),
+             InlineKeyboardButton(text=b["referal"], callback_data="referal")]
+        ]
+    )
 
-language_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="🇺🇸 ENG", callback_data="english")],
-        [InlineKeyboardButton(text="🇷🇺 RUS", callback_data="russian")],
-        [InlineKeyboardButton(text="🔙", callback_data="profile")]
-    ]
-)
+# Веб-приложение
+def get_web_app_menu():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🌐 Website", web_app=WebAppInfo(url="https://nixtradebot.vercel.app"))]
+        ]
+    )
 
-currency_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="🇷🇺 RUB", callback_data="rub")],
-        [InlineKeyboardButton(text="🇰🇿 KZT", callback_data="kzt")],
-        [InlineKeyboardButton(text="🇺🇦 UAH", callback_data="uah")],
-        [InlineKeyboardButton(text="🔙", callback_data="profile")]
-    ]
-)
+# Настройки
+def get_settings_menu(lang="ru"):
+    b = BUTTONS[lang]
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=b["currency"], callback_data="currency")],
+            [InlineKeyboardButton(text=b["language"], callback_data="language")],
+            [InlineKeyboardButton(text=b["back"], callback_data="profile")]
+        ]
+    )
 
-actives_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="Покупка", callback_data="buy"), 
-        InlineKeyboardButton(text="Продажа", callback_data="sell")],
-        [InlineKeyboardButton(text="🔙", callback_data="profile")]
-    ]
-)
+# Язык
+def get_language_menu():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🇺🇸 ENG", callback_data="eng")],
+            [InlineKeyboardButton(text="🇷🇺 RUS", callback_data="ru")],
+            [InlineKeyboardButton(text="🔙", callback_data="profile")]
+        ]
+    )
 
-buy_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="BTC", callback_data="buy_btc"), InlineKeyboardButton(text="ETH", callback_data="buy_eth"), InlineKeyboardButton(text="USDT", callback_data="buy_usdt")],
-        [InlineKeyboardButton(text="SHIB", callback_data="buy_shib"), InlineKeyboardButton(text="ATOM", callback_data="buy_atom")],
-        [InlineKeyboardButton(text="🔙", callback_data="profile")]
-    ]
-)
+# Валюта
+def get_currency_menu(lang="ru"):
+    b = BUTTONS[lang]
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🇷🇺 RUB", callback_data="rub")],
+            [InlineKeyboardButton(text="🇰🇿 KZT", callback_data="kzt")],
+            [InlineKeyboardButton(text="🇺🇦 UAH", callback_data="uah")],
+            [InlineKeyboardButton(text=b["back"], callback_data="profile")]
+        ]
+    )
 
-sell_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [InlineKeyboardButton(text="BTC", callback_data="sell_btc"), InlineKeyboardButton(text="ETH", callback_data="sell_eth"), InlineKeyboardButton(text="USDT", callback_data="sell_usdt")],
-        [InlineKeyboardButton(text="SHIB", callback_data="sell_shib"), InlineKeyboardButton(text="ATOM", callback_data="sell_atom")],
-        [InlineKeyboardButton(text="🔙", callback_data="profile")]
-    ]
-)
+# Активы
+def get_actives_menu(lang="ru"):
+    b = BUTTONS[lang]
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=b["buy"], callback_data="buy"),
+             InlineKeyboardButton(text=b["sell"], callback_data="sell")],
+            [InlineKeyboardButton(text=b["back"], callback_data="profile")]
+        ]
+    )
+
+# Покупка
+def get_buy_menu():
+    coins = ["BTC", "ETH", "USDT", "SHIB", "ATOM"]
+    keyboard = InlineKeyboardMarkup()
+    # Первая строка 3 кнопки
+    keyboard.row(*[InlineKeyboardButton(text=coin, callback_data=f"buy_{coin.lower()}") for coin in coins[:3]])
+    # Вторая строка 2 кнопки
+    keyboard.row(*[InlineKeyboardButton(text=coin, callback_data=f"buy_{coin.lower()}") for coin in coins[3:]])
+    # Кнопка назад
+    keyboard.add(InlineKeyboardButton(text="🔙", callback_data="profile"))
+    return keyboard
+
+# Продажа
+def get_sell_menu():
+    coins = ["BTC", "ETH", "USDT", "SHIB", "ATOM"]
+    keyboard = InlineKeyboardMarkup()
+    keyboard.row(*[InlineKeyboardButton(text=coin, callback_data=f"sell_{coin.lower()}") for coin in coins[:3]])
+    keyboard.row(*[InlineKeyboardButton(text=coin, callback_data=f"sell_{coin.lower()}") for coin in coins[3:]])
+    keyboard.add(InlineKeyboardButton(text="🔙", callback_data="profile"))
+    return keyboard
