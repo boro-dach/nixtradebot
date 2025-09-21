@@ -1,110 +1,154 @@
 // hooks/useTelegramWebApp.ts
+"use client";
 import { useEffect, useState } from "react";
-import { TelegramWebApp, TelegramUser } from "../types/telegram";
 
-type Platform = "web" | "mobile" | "desktop" | "unknown";
-
-interface UseTelegramWebAppReturn {
-  webApp: TelegramWebApp | null;
-  user: TelegramUser | null;
-  userId: number | null;
-  platform: Platform;
-  isWebVersion: boolean;
-  isLoading: boolean;
-  error: string | null;
+interface TelegramUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+  is_premium?: boolean;
 }
 
-export const useTelegramWebApp = (): UseTelegramWebAppReturn => {
-  const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
-  const [user, setUser] = useState<TelegramUser | null>(null);
-  const [platform, setPlatform] = useState<Platform>("unknown");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface TelegramWebAppData {
+  user?: TelegramUser;
+  chat_type?: string;
+  chat_instance?: string;
+  auth_date: number;
+  hash: string;
+}
+
+interface UseTelegramReturn {
+  user: TelegramUser | null;
+  userId: number | null;
+  webApp: any;
+  initData: TelegramWebAppData | null;
+  isLoading: boolean;
+  error: string | null;
+  isInTelegram: boolean;
+}
+
+export const useTelegramWebApp = (): UseTelegramReturn => {
+  const [state, setState] = useState<UseTelegramReturn>({
+    user: null,
+    userId: null,
+    webApp: null,
+    initData: null,
+    isLoading: true,
+    error: null,
+    isInTelegram: false,
+  });
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // Определяем платформу
-    const detectPlatform = (): Platform => {
-      if (window.location.hostname.includes("web.telegram.org")) return "web";
-      if (
-        /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          navigator.userAgent
-        )
-      ) {
-        return "mobile";
-      }
-      return "desktop";
-    };
-
-    setPlatform(detectPlatform());
-
-    const initTelegram = (): boolean => {
+    const initTelegram = () => {
       try {
+        if (typeof window === "undefined") {
+          setState((prev) => ({ ...prev, isLoading: false }));
+          return;
+        }
+
+        // Проверяем наличие Telegram WebApp
         if (window.Telegram?.WebApp) {
           const tg = window.Telegram.WebApp;
-          setWebApp(tg);
 
-          // Инициализируем приложение
+          // Инициализируем WebApp
           tg.ready();
+          tg.expand();
 
-          // Пробуем расширить на весь экран
-          try {
-            tg.expand();
-          } catch (e) {
-            console.warn("Expand not supported on this platform");
+          const initDataUnsafe = tg.initDataUnsafe;
+          const user = initDataUnsafe?.user;
+
+          setState({
+            user: user || null,
+            userId: user?.id || null,
+            webApp: tg,
+            initData: initDataUnsafe || null,
+            isLoading: false,
+            error: user ? null : "Данные пользователя недоступны",
+            isInTelegram: true,
+          });
+
+          console.log("Telegram WebApp initialized:", {
+            user,
+            initData: tg.initData,
+            initDataUnsafe: tg.initDataUnsafe,
+            version: tg.version,
+          });
+        } else {
+          // Пробуем альтернативные способы
+          const urlParams = new URLSearchParams(window.location.search);
+          const userParam = urlParams.get("user");
+
+          if (userParam) {
+            try {
+              const user = JSON.parse(decodeURIComponent(userParam));
+              setState({
+                user,
+                userId: user.id,
+                webApp: null,
+                initData: { user, auth_date: Date.now(), hash: "" },
+                isLoading: false,
+                error: null,
+                isInTelegram: true,
+              });
+              return;
+            } catch (e) {
+              console.warn("Failed to parse user from URL:", e);
+            }
           }
 
-          // Получаем данные пользователя
-          if (tg.initDataUnsafe?.user) {
-            setUser(tg.initDataUnsafe.user);
-          } else {
-            setError("Данные пользователя недоступны");
-          }
+          // Определяем, находимся ли мы в Telegram окружении
+          const isTelegramEnv = !!(
+            navigator.userAgent.includes("Telegram") ||
+            window.location.hostname.includes("telegram") ||
+            document.referrer.includes("telegram")
+          );
 
-          setIsLoading(false);
-          return true;
+          setState({
+            user: null,
+            userId: null,
+            webApp: null,
+            initData: null,
+            isLoading: false,
+            error: isTelegramEnv
+              ? "Telegram WebApp не инициализирован"
+              : "Приложение запущено вне Telegram",
+            isInTelegram: isTelegramEnv,
+          });
         }
-      } catch (err) {
-        setError(
-          `Ошибка инициализации: ${
-            err instanceof Error ? err.message : "Unknown error"
-          }`
-        );
-        setIsLoading(false);
+      } catch (error) {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: `Ошибка инициализации: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        }));
       }
-      return false;
     };
 
-    // Пробуем инициализировать сразу
-    if (!initTelegram()) {
-      // Если не получилось, ждем загрузки скрипта
-      let attempts = 0;
-      const maxAttempts = 100; // 10 секунд
+    // Проверяем, загружен ли уже скрипт
+    if (document.getElementById("telegram-web-app-js")) {
+      setTimeout(initTelegram, 100);
+    } else {
+      // Загружаем скрипт Telegram WebApp
+      const script = document.createElement("script");
+      script.id = "telegram-web-app-js";
+      script.src = "https://telegram.org/js/telegram-web-app.js";
+      script.async = true;
 
-      const checkTelegram = setInterval(() => {
-        attempts++;
+      script.onload = () => {
+        setTimeout(initTelegram, 100);
+      };
 
-        if (initTelegram()) {
-          clearInterval(checkTelegram);
-        } else if (attempts >= maxAttempts) {
-          clearInterval(checkTelegram);
-          setError("Не удалось загрузить Telegram Web App");
-          setIsLoading(false);
-        }
-      }, 100);
+      script.onerror = () => {
+        initTelegram(); // Пробуем без скрипта
+      };
 
-      return () => clearInterval(checkTelegram);
+      document.head.appendChild(script);
     }
   }, []);
 
-  return {
-    webApp,
-    user,
-    userId: user?.id ?? null,
-    platform,
-    isWebVersion: platform === "web",
-    isLoading,
-    error,
-  };
+  return state;
 };
