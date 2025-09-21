@@ -1,5 +1,6 @@
 "use client";
 
+import TelegramUserInfo from "@/entities/TelegramUserInfo";
 import Deposit from "@/features/deposit/ui/deposit";
 import Help from "@/features/help/ui/help";
 import Trade from "@/features/trade/ui/trade";
@@ -21,7 +22,7 @@ const Home = () => {
 
   return (
     <div className="flex flex-col items-center gap-4 px-4 max-h-screen">
-      <p>tgid: {tgid}</p>
+      <TelegramUserInfo />
       <Balance />
       <div className="grid grid-cols-4 grid-rows-1 gap-2 w-full mt-4">
         <Deposit />

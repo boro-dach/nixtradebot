@@ -23,28 +23,40 @@ const Settings = () => {
 
   return (
     <div className="flex flex-col gap-4 px-4 mt-4">
-      <Select defaultValue="rub">
-        <SelectTrigger className="flex flex-row justify-between w-full cursor-pointer">
-          <p>Основная валюта</p>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="rub">Российский рубль, RUB</SelectItem>
-          <SelectItem value="uah">Украинския гривна, UAH</SelectItem>
-          <SelectItem value="usd">Американский доллар, USD</SelectItem>
-          <SelectItem value="kzt">Казахстанский тенге, KZT</SelectItem>
-        </SelectContent>
-      </Select>
-      <Select defaultValue="ru">
-        <SelectTrigger className="flex flex-row justify-between w-full cursor-pointer">
-          <p>Язык приложения</p>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="ru">Русский, Russian</SelectItem>
-          <SelectItem value="en">Английский (США), English</SelectItem>
-        </SelectContent>
-      </Select>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          asChild
+          className="flex flex-row justify-between w-full cursor-pointer"
+        >
+          <Button className=" focus-visible:ring-0" variant={"outline"}>
+            <div className="flex flex-row justify-between w-full">
+              <p>Валюта</p>
+            </div>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem>Российский рубль, RUB</DropdownMenuItem>
+          <DropdownMenuItem>Украинския гривна, UAH</DropdownMenuItem>
+          <DropdownMenuItem>Американский доллар, USD</DropdownMenuItem>
+          <DropdownMenuItem>Казахстанский тенге, KZT</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          asChild
+          className="flex flex-row justify-between w-full cursor-pointer"
+        >
+          <Button className=" focus-visible:ring-0" variant={"outline"}>
+            <div className="flex flex-row justify-between w-full">
+              <p>Язык</p>
+            </div>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem>Русский, Russian</DropdownMenuItem>
+          <DropdownMenuItem>Английский (США), English</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <DropdownMenu>
         <DropdownMenuTrigger
           asChild
