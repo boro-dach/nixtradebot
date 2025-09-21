@@ -8,8 +8,10 @@ import Withdraw from "@/features/withdraw/ui/withdraw";
 import ActivesList from "@/widgets/actives-list/ui/actives-list";
 import Balance from "@/widgets/balance/ui/balance";
 import React, { useEffect, useState } from "react";
+import { retrieveLaunchParams } from "@telegram-apps/sdk";
 
 const Home = () => {
+  const { initDataRaw, initData } = retrieveLaunchParams();
   const [tgid, setTgid] = useState<number | null>(null);
 
   useEffect(() => {
@@ -22,7 +24,7 @@ const Home = () => {
 
   return (
     <div className="flex flex-col items-center gap-4 px-4 max-h-screen">
-      <TelegramUserInfo />
+      <p>{String(initData)}</p>
       <Balance />
       <div className="grid grid-cols-4 grid-rows-1 gap-2 w-full mt-4">
         <Deposit />
