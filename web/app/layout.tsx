@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Header from "@/widgets/header/ui/header";
 import { ThemeProvider } from "@/shared/providers/theme-provider";
+import { TelegramProvider } from "@/shared/providers/telegram-provider";
 
 // const SFProText = localFont({
 //   src: [
@@ -52,15 +53,17 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased flex flex-col max-h-screen`}
       >
-        <ThemeProvider
-          attribute={"class"}
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Header />
-          {children}
-        </ThemeProvider>
+        <TelegramProvider>
+          <ThemeProvider
+            attribute={"class"}
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Header />
+            {children}
+          </ThemeProvider>
+        </TelegramProvider>
       </body>
     </html>
   );

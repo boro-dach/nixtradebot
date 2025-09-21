@@ -2,17 +2,13 @@ import requests
 import logging
 
 logger = logging.getLogger(__name__)
-API_URL_BASE = "http://localhost:5000/user/language"
 
 
 def set_user_language(user_id: int, language: str) -> bool:
-    """
-    Установить язык пользователя через API.
-    """
     try:
         response = requests.post(
-            API_URL_BASE,
-            json={"tgid": user_id, "language": language.upper()},
+            "http://localhost:5000/user/set-language",
+            json={"tgid": str(user_id), "language": language.upper()},
             timeout=5
         )
         response.raise_for_status()
@@ -23,15 +19,21 @@ def set_user_language(user_id: int, language: str) -> bool:
         return False
 
 
-def get_user_language(user_id: int) -> str:
-    """
-    Получить язык пользователя через API.
-    """
+def get_user_language(user_id: int):
     try:
-        response = requests.get(f"{API_URL_BASE}?tgid={user_id}", timeout=5)
+        response = requests.post(
+            "http://localhost:5000/user/get-language", 
+            json={"tgid": str(user_id)},
+            timeout=5
+        )
         response.raise_for_status()
-        lang = response.json().get("language", "RU")
+        
+        result = response.json()
+        print(f"API response: {result}")
+        
+        lang = result.get("language", "RU")
         return lang.lower()
     except Exception as e:
         logger.error(f"Failed to get language for user {user_id}: {e}")
-        return "RU"
+        return "ru"
+

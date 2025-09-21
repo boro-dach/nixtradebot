@@ -1,7 +1,7 @@
 import aiohttp
+import asyncio
 
 BASE_URL = "http://localhost:5000"
-
 
 async def login(tgid: int) -> dict:
     url = f"{BASE_URL}/auth/login"

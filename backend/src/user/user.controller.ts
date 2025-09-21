@@ -1,21 +1,13 @@
 import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
 import { UserService } from './user.service';
-import { ChangeLanguageDto } from './dto/user.dto';
+import { ChangeLanguageDto, GetLanguageDto } from './dto/user.dto';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @HttpCode(200)
-  @Get('get-all')
-  async getAll() {
-    const users = await this.userService.getAll();
-
-    return users;
-  }
-
-  @HttpCode(200)
-  @Post('language')
+  @Post('set-language')
   async changeLanguage(@Body() dto: ChangeLanguageDto) {
     const user = await this.userService.changeLanguage(dto);
 
@@ -23,12 +15,10 @@ export class UserController {
   }
 
   @HttpCode(200)
-  @Get('language')
-  async getLanguage(@Query('tgid') tgid: string) {
-    const user = await this.userService.findById(tgid);
-    if (!user) {
-      return { language: 'RU' };
-    }
-    return { language: user.language.toUpperCase() };
+  @Post('get-language')
+  async getLanguage(@Body() dto: GetLanguageDto) {
+    const language = await this.userService.getLanguage(dto);
+
+    return { language };
   }
 }

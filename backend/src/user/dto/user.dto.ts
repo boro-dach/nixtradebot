@@ -13,3 +13,8 @@ export class ChangeLanguageDto {
   @IsString()
   tgid: string;
 }
+
+export class GetLanguageDto {
+  @IsString()
+  tgid: string;
+}

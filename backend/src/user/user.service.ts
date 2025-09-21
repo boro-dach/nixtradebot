@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { ChangeLanguageDto, CreateDto } from './dto/user.dto';
+import { ChangeLanguageDto, CreateDto, GetLanguageDto } from './dto/user.dto';
 import { Language } from 'generated/prisma';
 
 @Injectable()
@@ -10,15 +10,11 @@ export class UserService {
   async create(dto: CreateDto) {
     const user = await this.prisma.user.create({
       data: {
-        tgid: String(dto.tgid),
+        tgid: dto.tgid,
       },
     });
 
     return user;
-  }
-
-  async getAll() {
-    const users = await this.prisma.user;
   }
 
   async findById(id: string) {
@@ -34,7 +30,7 @@ export class UserService {
   async changeLanguage(dto: ChangeLanguageDto) {
     const user = await this.prisma.user.update({
       where: {
-        tgid: String(dto.tgid),
+        tgid: dto.tgid,
       },
       data: {
         language: dto.language,
@@ -44,13 +40,13 @@ export class UserService {
     return user;
   }
 
-  async getLanguage(id: string) {
-    const user = await this.prisma.user.findFirst({
-      where: {
-        tgid: id,
-      },
-    });
+  async getLanguage(dto: GetLanguageDto) {
+    const user = await this.findById(dto.tgid);
 
-    return user?.language;
+    if (!user) {
+      throw new BadRequestException('user doesnt exist');
+    }
+
+    return user.language;
   }
 }
