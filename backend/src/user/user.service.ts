@@ -10,7 +10,7 @@ export class UserService {
   async create(dto: CreateDto) {
     const user = await this.prisma.user.create({
       data: {
-        tgid: dto.tgid,
+        tgid: String(dto.tgid),
       },
     });
 
@@ -48,5 +48,11 @@ export class UserService {
     }
 
     return user.language;
+  }
+
+  async getAll() {
+    const users = await this.prisma.user.findMany();
+
+    return users;
   }
 }

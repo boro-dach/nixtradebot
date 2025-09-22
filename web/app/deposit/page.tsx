@@ -31,15 +31,25 @@ const Deposit = () => {
           </CardContent>
         </Card>
       </Link>
-      <Link href={""}>
+      <Link href={"/deposit/ton"}>
         <Card>
           <CardContent className="flex flex-row items-center gap-4">
-            <Image src={"/tether.svg"} height={32} width={32} alt="Tether" />
-            <p>Tether</p>
+            <Image src={"/ton.png"} height={32} width={32} alt="Tether" />
+            <p>TON</p>
           </CardContent>
         </Card>
       </Link>
-      <Link href={""}>
+      <Link href={"/deposit/usdt"}>
+        <Card>
+          <CardContent className="flex flex-row items-center gap-4">
+            <Image src={"/tether.svg"} height={32} width={32} alt="Tether" />
+            <p>
+              Tether, <span className="text-zinc-400">TRC20</span>
+            </p>
+          </CardContent>
+        </Card>
+      </Link>
+      <Link href={"/deposit/btc"}>
         <Card>
           <CardContent className="flex flex-row items-center gap-4">
             <Image src={"/bitcoin.svg"} height={32} width={32} alt="Bicoin" />
@@ -47,7 +57,7 @@ const Deposit = () => {
           </CardContent>
         </Card>
       </Link>
-      <Link href={""}>
+      <Link href={"/deposit/eth"}>
         <Card>
           <CardContent className="flex flex-row items-center gap-4">
             <Image

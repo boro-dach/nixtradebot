@@ -129,3 +129,11 @@ def get_sell_menu():
     keyboard.row(*[InlineKeyboardButton(text=coin, callback_data=f"sell_{coin.lower()}") for coin in coins[3:]])
     keyboard.add(InlineKeyboardButton(text="🔙", callback_data="profile"))
     return keyboard
+
+def get_help_menu(lang="ru"):
+    b = BUTTONS[lang]
+    return InlineKeyboardMarkup(
+        inline_keyboard = [
+            [InlineKeyboardButton(text=b["help"], url="https://t.me/nixmoderator")]
+        ]
+    )

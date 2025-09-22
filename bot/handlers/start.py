@@ -1,5 +1,6 @@
 from aiogram import Router, types
 from aiogram.filters import Command
+from aiogram.enums import ParseMode
 from keyboards.reply import main_menu
 from api.login import login
 from keyboards.translations import TEXTS
@@ -20,5 +21,6 @@ async def cmd_start(message: types.Message):
 
     await message.answer(
         texts["welcome"],
+        parse_mode=ParseMode.HTML,
         reply_markup=main_menu
     )

@@ -27,6 +27,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  transactions Transaction[]
 }
 
 model Admin {
@@ -34,4 +35,27 @@ model Admin {
 
   login String
   password String
+}
+
+enum TransactionCurrency {
+  TON
+  USDT
+  BTC
+  ETH
+}
+
+enum Status {
+  CREATED
+  PROCESSING
+  CONFIRMED
+  REJECTED
+}
+model Transaction {
+  id String @id @default(cuid())
+
+  user_id String
+  user User @relation(fields: [user_id], references: [tgid])
+
+  currency TransactionCurrency
+  status Status @default(CREATED)
 }

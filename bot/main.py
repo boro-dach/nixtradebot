@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import Bot, Dispatcher
-from handlers.inline import profile, deposit, options, about, webapp, withdraw, settings, back_to_profile, language, currency, actives, buy, sell
+from handlers.inline import profile, deposit, options, about, webapp, withdraw, settings, back_to_profile, language, currency, actives, buy, sell, help
 from handlers import start
 import os
 import sys
@@ -27,6 +27,7 @@ async def main():
     dp.include_router(actives.router)
     dp.include_router(buy.router)
     dp.include_router(sell.router)
+    dp.include_router(help.router)
     
     await dp.start_polling(bot)
 

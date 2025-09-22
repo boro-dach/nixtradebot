@@ -3,12 +3,12 @@ import { ArrowLeftRight, Calendar, Search, Settings, User } from "lucide-react";
 export const items = [
   {
     title: "Пользователи",
-    url: "#",
+    url: "/users",
     icon: User,
   },
   {
     title: "Транзакции",
-    url: "#",
+    url: "/transactions",
     icon: ArrowLeftRight,
   },
 ];

@@ -21,4 +21,12 @@ export class UserController {
 
     return { language };
   }
+
+  @HttpCode(200)
+  @Get('get-all')
+  async getAll() {
+    const users = await this.userService.getAll();
+
+    return users;
+  }
 }
