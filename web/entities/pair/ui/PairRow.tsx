@@ -12,7 +12,7 @@ export const PairRow: React.FC<PairRowProps> = ({ pair, onSelect }) => (
     className="w-full justify-start gap-4 p-3 h-auto"
     onClick={() => onSelect(pair)}
   >
-    <pair.icon />
+    {/* <pair.icon /> */}
     <span className="font-semibold text-base">{pair.name}</span>
   </Button>
 );
