@@ -25,6 +25,16 @@ def get_deposit_menu(lang="ru"):
         ]
     )
 
+def get_deposit_crypto_menu():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="TON", callback_data="deposit_ton")],
+            [InlineKeyboardButton(text="USDT TRC20", callback_data="deposit_usdt")],
+            [InlineKeyboardButton(text="Bitcoin", callback_data="deposit_bitcoin")],
+            [InlineKeyboardButton(text="Ethereum", callback_data="deposit_eth")]
+        ]
+    )
+
 # Криптовалюты
 def get_coins_menu(lang="ru") -> InlineKeyboardMarkup:
     coins = [

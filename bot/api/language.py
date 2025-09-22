@@ -20,20 +20,22 @@ def set_user_language(user_id: int, language: str) -> bool:
 
 
 def get_user_language(user_id: int):
-    try:
-        response = requests.post(
-            "http://localhost:5000/user/get-language", 
-            json={"tgid": str(user_id)},
-            timeout=5
-        )
-        response.raise_for_status()
+    # try:
+    #     response = requests.post(
+    #         "http://localhost:5000/user/get-language", 
+    #         json={"tgid": str(user_id)},
+    #         timeout=5
+    #     )
+    #     response.raise_for_status()
         
-        result = response.json()
-        print(f"API response: {result}")
+    #     result = response.json()
+    #     print(f"API response: {result}")
         
-        lang = result.get("language", "RU")
-        return lang.lower()
-    except Exception as e:
-        logger.error(f"Failed to get language for user {user_id}: {e}")
-        return "ru"
+    #     lang = result.get("language", "RU")
+    #     return lang.lower()
+    # except Exception as e:
+    #     logger.error(f"Failed to get language for user {user_id}: {e}")
+    #     return "ru"
+
+    return "ru"
 
