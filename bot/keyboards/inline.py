@@ -144,6 +144,6 @@ def get_help_menu(lang="ru"):
     b = BUTTONS[lang]
     return InlineKeyboardMarkup(
         inline_keyboard = [
-            [InlineKeyboardButton(text=b["help"], url="https://t.me/nixmoderator")]
+            [InlineKeyboardButton(text=b["help"], url="https://t.me/NixSwag")]
         ]
     )

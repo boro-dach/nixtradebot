@@ -3,9 +3,10 @@ import { TransactionService } from './transaction.service';
 import { TransactionController } from './transaction.controller';
 import { PrismaService } from 'src/prisma.service';
 import { BalanceService } from 'src/balance/balance.service';
+import { UserService } from 'src/user/user.service';
 
 @Module({
   controllers: [TransactionController],
-  providers: [TransactionService, PrismaService, BalanceService],
+  providers: [TransactionService, PrismaService, BalanceService, UserService],
 })
 export class TransactionModule {}

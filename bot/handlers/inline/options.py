@@ -16,8 +16,6 @@ COINS_LIST = [
 ]
 COINS_CALLBACK_DATA = [coin.lower() for coin in COINS_LIST]
 
-# --- Функция для получения курса с CoinGecko API ---
-# 2. Заменяем "float | None" на "Union[float, None]"
 async def get_crypto_price(coin_id: str) -> Union[float, None]:
     """
     Получает цену криптовалюты в USD с помощью API CoinGecko.

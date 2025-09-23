@@ -11,7 +11,7 @@ export class BalanceController {
   async getBalance(@Body() body: { tgid: string }) {
     const balance = await this.balanceService.getBalance(body.tgid);
 
-    return balance;
+    return { balance };
   }
 
   @HttpCode(200)
