@@ -17,15 +17,39 @@ import { PairRow } from "@/entities/pair/ui/PairRow";
 const PAIRS: ICryptoPair[] = [
   {
     name: "Bitcoin",
-    symbol: "BTC",
+    symbol: "BTCUSDT",
   },
   {
     name: "Ethereum",
-    symbol: "ETH",
+    symbol: "ETHUSDT",
+  },
+  {
+    name: "Litecoin",
+    symbol: "LTCUSDT",
+  },
+  {
+    name: "Cardano",
+    symbol: "ADAUSDT",
   },
   {
     name: "Solana",
-    symbol: "SOL",
+    symbol: "SOLUSDT",
+  },
+  {
+    name: "Doge",
+    symbol: "DOGEUSDT",
+  },
+  {
+    name: "Polkadot",
+    symbol: "DOTUSDT",
+  },
+  {
+    name: "Avalanche",
+    symbol: "AVAXUSDT",
+  },
+  {
+    name: "Chainlink",
+    symbol: "LINKUSDT",
   },
 ];
 
@@ -53,7 +77,7 @@ export const PairSelectDrawer: React.FC<PairSelectDrawerProps> = ({
           <ChevronDown />
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="bg-zinc-900 border-zinc-800">
+      <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>Выберите актив</DrawerTitle>
         </DrawerHeader>

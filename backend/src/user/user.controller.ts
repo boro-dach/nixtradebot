@@ -29,4 +29,12 @@ export class UserController {
 
     return users;
   }
+
+  @HttpCode(200)
+  @Post('verify')
+  async verify(@Body() body: { tgid: string }) {
+    const user = await this.userService.verify(body.tgid);
+
+    return user;
+  }
 }

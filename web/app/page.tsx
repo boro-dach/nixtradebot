@@ -30,7 +30,6 @@ const Home = () => {
 
   return (
     <div className="flex flex-col items-center gap-4 px-4 max-h-screen">
-      {/* Статус пользователя */}
       <div
         className={`w-full p-3 rounded ${
           isAuthenticated

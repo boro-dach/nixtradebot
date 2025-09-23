@@ -1,4 +1,6 @@
 export interface IUser {
+  balance: number;
   tgid: string;
-  languge: "RU" | "ENG";
+  language: "RU" | "ENG";
+  verified: boolean;
 }

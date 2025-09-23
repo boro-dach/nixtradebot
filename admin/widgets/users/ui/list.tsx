@@ -36,7 +36,7 @@ const UsersList: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 w-full">
       {users.map((user) => (
         <User key={user.tgid} user={user} />
       ))}

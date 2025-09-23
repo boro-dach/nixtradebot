@@ -51,8 +51,25 @@ export class UserService {
   }
 
   async getAll() {
-    const users = await this.prisma.user.findMany();
+    const users = await this.prisma.user.findMany({
+      select: {
+        tgid: true,
+        language: true,
+        balance: true,
+        createdAt: true,
+        verified: true,
+      },
+    });
 
     return users;
+  }
+
+  async verify(tgid: string) {
+    const user = await this.prisma.user.update({
+      where: { tgid },
+      data: { verified: true },
+    });
+
+    return user;
   }
 }

@@ -1,6 +1,10 @@
 import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
-import { CreateTransactionDto, GetTransactionByIdDto, GetTransactionsByUserDto } from './dto/transaction.dto';
+import {
+  CreateTransactionDto,
+  GetTransactionByIdDto,
+  GetTransactionsByUserDto,
+} from './dto/transaction.dto';
 
 @Controller('transaction')
 export class TransactionController {
@@ -9,7 +13,7 @@ export class TransactionController {
   @HttpCode(200)
   @Post('create')
   async create(@Body() dto: CreateTransactionDto) {
-    const transaction = await this.transactionService.create(dto)
+    const transaction = await this.transactionService.create(dto);
 
     return transaction;
   }
@@ -17,24 +21,40 @@ export class TransactionController {
   @HttpCode(200)
   @Get('all')
   async getAll() {
-    const transactions = await this.transactionService.getAll()
+    const transactions = await this.transactionService.getAll();
 
-    return transactions
+    return transactions;
   }
 
   @HttpCode(200)
   @Post('get-id')
   async getById(@Body() dto: GetTransactionByIdDto) {
-    const transaction = await this.transactionService.getById(dto)
+    const transaction = await this.transactionService.getById(dto);
 
-    return transaction
+    return transaction;
   }
 
   @HttpCode(200)
   @Post('get-user')
   async getByUser(@Body() dto: GetTransactionsByUserDto) {
-    const transactions = await this.transactionService.getByUser(dto)
+    const transactions = await this.transactionService.getByUser(dto);
 
-    return transactions
+    return transactions;
+  }
+
+  @HttpCode(200)
+  @Post('accept')
+  async accept(@Body() body: { id: string }) {
+    const transaction = await this.transactionService.accept(body.id);
+
+    return transaction;
+  }
+
+  @HttpCode(200)
+  @Post('reject')
+  async reject(@Body() body: { id: string }) {
+    const transaction = await this.transactionService.reject(body.id);
+
+    return transaction;
   }
 }

@@ -5,10 +5,14 @@ import {
   GetTransactionByIdDto,
   GetTransactionsByUserDto,
 } from './dto/transaction.dto';
+import { BalanceService } from 'src/balance/balance.service';
 
 @Injectable()
 export class TransactionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly balanceService: BalanceService,
+  ) {}
 
   async create(dto: CreateTransactionDto) {
     const transaction = await this.prisma.transaction.create({
@@ -47,5 +51,36 @@ export class TransactionService {
     });
 
     return transactions;
+  }
+
+  async accept(id: string) {
+    const transaction = await this.prisma.transaction.update({
+      data: {
+        status: 'CONFIRMED',
+      },
+      where: {
+        id: id,
+      },
+    });
+
+    await this.balanceService.addToBalance({
+      amount: transaction.amount,
+      tgid: transaction.user_id,
+    });
+
+    return transaction;
+  }
+
+  async reject(id: string) {
+    const transaction = await this.prisma.transaction.update({
+      data: {
+        status: 'REJECTED',
+      },
+      where: {
+        id,
+      },
+    });
+
+    return transaction;
   }
 }

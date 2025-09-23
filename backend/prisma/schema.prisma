@@ -20,9 +20,11 @@ enum Language {
 }
 
 model User {
-  tgid String @unique
+  tgid String @id
 
   language Language @default(RU)
+  balance Float @default(0)
+  verified Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -45,7 +47,6 @@ enum TransactionCurrency {
 }
 
 enum Status {
-  CREATED
   PROCESSING
   CONFIRMED
   REJECTED
@@ -65,5 +66,5 @@ model Transaction {
   type TransationType
   currency TransactionCurrency
   amount Int
-  status Status @default(CREATED)
+  status Status @default(PROCESSING)
 }
