@@ -1,10 +1,10 @@
 export interface ICryptoPair {
-  symbol: string; // e.g., "BTCUSDT"
-  name: string; // e.g., "Bitcoin"
+  symbol: string;
+  name: string;
 }
 
 export interface ICandlestick {
-  time: number; // Unix timestamp в секундах
+  time: number;
   open: number;
   high: number;
   low: number;

@@ -50,12 +50,20 @@ enum Status {
   CONFIRMED
   REJECTED
 }
+
+enum TransationType {
+  DEPOSIT
+  WITHDRAW
+}
+
 model Transaction {
   id String @id @default(cuid())
 
   user_id String
   user User @relation(fields: [user_id], references: [tgid])
 
+  type TransationType
   currency TransactionCurrency
+  amount Int
   status Status @default(CREATED)
 }

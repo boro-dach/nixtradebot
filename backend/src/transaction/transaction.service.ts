@@ -13,8 +13,10 @@ export class TransactionService {
   async create(dto: CreateTransactionDto) {
     const transaction = await this.prisma.transaction.create({
       data: {
+        amount: dto.amount,
         user_id: dto.user_id,
         currency: dto.currency,
+        type: dto.type,
       },
     });
 

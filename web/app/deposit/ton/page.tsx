@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
 
 // Иконка для копирования (можно вынести в отдельный компонент)
 const CopyIcon = () => (
@@ -53,7 +54,11 @@ const DepositTon = () => {
         Пополнить баланс с помощью TON
       </h2>
       <div className="flex flex-col gap-3 items-center w-full">
-        <p>Переведите желаемую сумму на адрес:</p>
+        <p>Переведите сумму:</p>
+
+        <Input className="w-xs" />
+
+        <p>на адрес:</p>
 
         <button
           onClick={handleCopyAddress}

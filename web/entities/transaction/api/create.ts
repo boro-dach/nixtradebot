@@ -6,5 +6,9 @@ export async function createTransaction(values: any) {
       "http://localhost:5000/transaction/create",
       values
     );
-  } catch (err) {}
+
+    return response.data;
+  } catch (err) {
+    return err;
+  }
 }

@@ -15,7 +15,18 @@ import { useState } from "react";
 import { PairRow } from "@/entities/pair/ui/PairRow";
 
 const PAIRS: ICryptoPair[] = [
-  /* ... ваш список пар с иконками ... */
+  {
+    name: "Bitcoin",
+    symbol: "BTC",
+  },
+  {
+    name: "Ethereum",
+    symbol: "ETH",
+  },
+  {
+    name: "Solana",
+    symbol: "SOL",
+  },
 ];
 
 interface PairSelectDrawerProps {
@@ -23,7 +34,6 @@ interface PairSelectDrawerProps {
   onSelectPair: (pair: ICryptoPair) => void;
 }
 
-// FSD: Фича выбора пары. Она использует Drawer из shared/ui и PairRow из entities/pair.
 export const PairSelectDrawer: React.FC<PairSelectDrawerProps> = ({
   selectedPair,
   onSelectPair,
@@ -38,8 +48,7 @@ export const PairSelectDrawer: React.FC<PairSelectDrawerProps> = ({
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerTrigger asChild>
-        <Button variant="outline" className="...">
-          {/* ... UI триггера, как в предыдущих примерах ... */}
+        <Button variant="outline" className="flex items-center space-x-2">
           <span className="font-bold text-lg">{selectedPair.name} / USDT</span>
           <ChevronDown />
         </Button>

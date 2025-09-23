@@ -47,14 +47,14 @@ async def process_ton_amount(message: types.Message, state: FSMContext):
         if amount <= 0:
             raise ValueError
     except ValueError:
-        text = "Введите корректное положительное число." if user_lang == "RU" else "Please enter a valid positive number."
+        text = "Введите корректное положительное число." if user_lang == "ru" else "Please enter a valid positive number."
         await message.answer(text)
         return
 
-    deposit_address = "EQD...your_address_here..."
+    deposit_address = "UQAL4wSs8g145h4704Q1to_mPCjCBEZAv0NVsIjmMFODqy8H"
 
     text = (f"Пожалуйста, отправьте {amount} TON на следующий адрес:\n\n`{deposit_address}`"
-            if user_lang == "RU" else
+            if user_lang == "ru" else
             f"Please send {amount} TON to the following address:\n\n`{deposit_address}`")
 
     await message.answer(text, parse_mode="Markdown")
@@ -78,14 +78,14 @@ async def process_usdt_amount(message: types.Message, state: FSMContext):
         if amount <= 0:
             raise ValueError
     except ValueError:
-        text = "Введите корректное положительное число." if user_lang == "RU" else "Please enter a valid positive number."
+        text = "Введите корректное положительное число." if user_lang == "ru" else "Please enter a valid positive number."
         await message.answer(text)
         return
 
-    deposit_address = "EQD...your_address_here..."
+    deposit_address = "TDKKeUvjmaog2JgFuLD7NqVvrbjnMfu5pF"
 
     text = (f"Пожалуйста, отправьте {amount} USDT по сети TRC20 на следующий адрес:\n\n`{deposit_address}`"
-            if user_lang == "RU" else
+            if user_lang == "ru" else
             f"Please send {amount} USDT in TRC20 network to the following address:\n\n`{deposit_address}`")
 
     await message.answer(text, parse_mode="Markdown")
@@ -109,14 +109,14 @@ async def process_bitcoin_amount(message: types.Message, state: FSMContext):
         if amount <= 0:
             raise ValueError
     except ValueError:
-        text = "Введите корректное положительное число." if user_lang == "RU" else "Please enter a valid positive number."
+        text = "Введите корректное положительное число." if user_lang == "ru" else "Please enter a valid positive number."
         await message.answer(text)
         return
 
-    deposit_address = "EQD...your_address_here..."
+    deposit_address = "bc1qaytwrtzttgusr2dph76wz2pjrhzdjqtzz5qk3y"
 
     text = (f"Пожалуйста, отправьте {amount} Bitcoin на следующий адрес:\n\n`{deposit_address}`"
-            if user_lang == "RU" else
+            if user_lang == "ru" else
             f"Please send {amount} Bitcoin to the following address:\n\n`{deposit_address}`")
 
     await message.answer(text, parse_mode="Markdown")
@@ -140,14 +140,14 @@ async def process_eth_amount(message: types.Message, state: FSMContext):
         if amount <= 0:
             raise ValueError
     except ValueError:
-        text = "Введите корректное положительное число." if user_lang == "RU" else "Please enter a valid positive number."
+        text = "Введите корректное положительное число." if user_lang == "ru" else "Please enter a valid positive number."
         await message.answer(text)
         return
 
-    deposit_address = "EQD...your_address_here..."
+    deposit_address = "0x61F6C55caAf6D50b4c8764A17916DB6af61079ed"
 
     text = (f"Пожалуйста, отправьте {amount} Ethereum на следующий адрес:\n\n`{deposit_address}`"
-            if user_lang == "RU" else
+            if user_lang == "ru" else
             f"Please send {amount} Ethereum network to the following address:\n\n`{deposit_address}`")
 
     await message.answer(text, parse_mode="Markdown")

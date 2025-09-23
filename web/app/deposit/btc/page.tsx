@@ -2,8 +2,10 @@
 
 import React, { useState } from "react";
 import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import { createTransaction } from "@/entities/transaction/api/create";
+import { telegramSelectors, useTelegramStore } from "@/entities/telegram";
 
-// Иконка для копирования (можно вынести в отдельный компонент)
 const CopyIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -24,7 +26,10 @@ const CopyIcon = () => (
 const DepositBtc = () => {
   const btcAddress = "bc1qaytwrtzttgusr2dph76wz2pjrhzdjqtzz5qk3y";
 
+  const userId = useTelegramStore(telegramSelectors.userId);
+
   const [isCopied, setIsCopied] = useState(false);
+  const [amount, setAmount] = useState(0);
 
   const truncateAddress = (address: string) => {
     if (!address) return "";
@@ -53,7 +58,15 @@ const DepositBtc = () => {
         Пополнить баланс с помощью Bitcoin
       </h2>
       <div className="flex flex-col gap-3 items-center w-full">
-        <p>Переведите желаемую сумму на адрес:</p>
+        <p>Переведите сумму:</p>
+
+        <Input
+          value={amount}
+          onChange={(e) => setAmount(Number(e.target.value))}
+          className="w-xs"
+        />
+
+        <p>на адрес:</p>
 
         <button
           onClick={handleCopyAddress}
@@ -71,7 +84,17 @@ const DepositBtc = () => {
       </div>
 
       <div className="flex flex-col gap-2 w-full max-w-xs text-center">
-        <Button className="dark:text-white w-full cursor-pointer">
+        <Button
+          onClick={() => {
+            createTransaction({
+              currency: "BTC",
+              amount: amount,
+              user_id: userId,
+              type: "DEPOSIT",
+            });
+          }}
+          className="dark:text-white w-full cursor-pointer"
+        >
           Я перевёл
         </Button>
         <p className="text-zinc-400 text-sm px-4">
