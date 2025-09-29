@@ -5,6 +5,7 @@ import "./globals.css";
 import Header from "@/widgets/header/ui/header";
 import { ThemeProvider } from "@/shared/providers/theme-provider";
 import { TelegramProvider } from "@/shared/providers/telegram-provider";
+import Navbar from "@/widgets/navbar/ui/navbar";
 
 // const SFProText = localFont({
 //   src: [
@@ -51,7 +52,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} antialiased flex flex-col max-h-screen`}
+        className={`${inter.variable} antialiased flex flex-col h-screen dark`}
       >
         <TelegramProvider>
           <ThemeProvider
@@ -60,8 +61,10 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <Header />
-            {children}
+            <main className="flex flex-col justify-between h-full">
+              {children}
+              <Navbar />
+            </main>
           </ThemeProvider>
         </TelegramProvider>
       </body>
