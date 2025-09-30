@@ -5,7 +5,7 @@ import React from "react";
 
 const Header = () => {
   return (
-    <div className="flex flex-row justify-between items-center h-16 p-4">
+    <div className="flex flex-row justify-between items-center h-16">
       <Button variant={"secondary"} className="text-blue-600">
         <Trophy /> Конкурсы
       </Button>

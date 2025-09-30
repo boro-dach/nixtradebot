@@ -51,9 +51,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} antialiased flex flex-col h-screen dark`}
-      >
+      <body className={`${inter.variable} antialiased h-screen dark`}>
         <TelegramProvider>
           <ThemeProvider
             attribute={"class"}
@@ -61,7 +59,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <main className="flex flex-col justify-between h-full">
+            <main className="flex flex-col h-screen justify-between">
               {children}
               <Navbar />
             </main>
