@@ -6,7 +6,7 @@ import React from "react";
 const Navbar = () => {
   return (
     <div className="flex flex-row items-center justify-between border-t min-h-12 px-8">
-      <Link href={""}>
+      <Link href={"/"}>
         <Home size={22} />
       </Link>
       <Link href={""}>
@@ -15,7 +15,7 @@ const Navbar = () => {
       <Link href={""}>
         <Coins size={22} />
       </Link>
-      <Link href={""}>
+      <Link href={"portfolio"}>
         <BarChart3 size={22} />
       </Link>
       <Link href={""}>
