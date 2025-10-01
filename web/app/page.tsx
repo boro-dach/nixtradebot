@@ -68,6 +68,7 @@ const Main = () => {
       <div className="flex flex-col mt-4 pb-0">
         <div className="flex flex-row items-center justify-between">
           <div className="flex flex-row gap-2 items-center">
+            {displayName}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

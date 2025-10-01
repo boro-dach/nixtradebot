@@ -18,7 +18,7 @@ const Navbar = () => {
       <Link href={"portfolio"}>
         <BarChart3 size={22} />
       </Link>
-      <Link href={""}>
+      <Link href={"/profile"}>
         <User size={22} />
       </Link>
     </div>
