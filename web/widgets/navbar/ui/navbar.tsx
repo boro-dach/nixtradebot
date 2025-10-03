@@ -5,7 +5,7 @@ import React from "react";
 
 const Navbar = () => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 flex flex-row items-center justify-between border-t min-h-16 px-8 bg-background z-50">
+    <div className="fixed bottom-0 left-0 right-0 flex flex-row items-center justify-between border-t min-h-16 px-8 bg-background ">
       <Link href={"/"}>
         <Home size={22} />
       </Link>

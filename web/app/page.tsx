@@ -25,7 +25,7 @@ const Main = () => {
   const [isStarred, setIsStarred] = useState<boolean>(false);
 
   return (
-    <div className="flex flex-col flex-1 bg-background mx-4 gap-2">
+    <div className="flex flex-col flex-1 bg-background mx-4 gap-2 pb-20">
       <div className="flex flex-col mt-4 pb-0">
         <div className="flex flex-row items-center justify-between">
           <div className="flex flex-row gap-2 items-center">

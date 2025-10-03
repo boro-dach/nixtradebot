@@ -13,7 +13,7 @@ const Profile = () => {
   const displayName = useTelegramStore(telegramSelectors.displayName);
 
   return (
-    <div className="flex flex-col mx-4 gap-4">
+    <div className="flex flex-col mx-4 gap-4 pb-20">
       <div className="flex flex-row justify-between items-center mt-4">
         <p className="text-lg font-semibold">Profile</p>
       </div>
