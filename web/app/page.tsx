@@ -1,53 +1,14 @@
 "use client";
 import { useTelegramStore, telegramSelectors } from "@/entities/telegram";
-import Balance from "@/widgets/balance/ui/balance";
-import Deposit from "@/features/deposit/ui/deposit";
-import Help from "@/features/help/ui/help";
-import Trade from "@/features/trade/ui/trade";
-import Withdraw from "@/features/withdraw/ui/withdraw";
-import ActivesList from "@/widgets/actives-list/ui/actives-list";
 import { Button } from "@/shared/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
-import { Badge } from "@/shared/ui/badge";
-import { Progress } from "@/shared/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/shared/ui/dropdown-menu";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import {
-  Ellipsis,
-  List,
-  Share2,
-  Star,
-  TrendingUp,
-  TrendingDown,
-  ArrowUpRight,
-  BarChart3,
-  Users,
-  Home,
-  MessageSquare,
-  Settings,
-  User,
-} from "lucide-react";
+import { List, Share2, Star, TrendingDown } from "lucide-react";
 import { useState } from "react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/shared/ui/chart";
 import ChartWithTimescale from "@/widgets/chart-with-timescale/ui/ChartWithTimescale";
 import { StablecoinMarketCapWidget } from "@/widgets/stablecoin-market-cap/ui/StablecoinMarketCap";
 import { DEXsVolumeWidget } from "@/widgets/dexs-volume/ui/DEXsVolume";
@@ -68,7 +29,6 @@ const Main = () => {
       <div className="flex flex-col mt-4 pb-0">
         <div className="flex flex-row items-center justify-between">
           <div className="flex flex-row gap-2 items-center">
-            {displayName}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
