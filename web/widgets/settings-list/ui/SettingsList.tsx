@@ -9,7 +9,7 @@ const SettingsList = () => {
       <SettingsItem
         title="Language"
         icon={<Languages size={20} />}
-        link="/languages"
+        link="/language"
       />
       <SettingsItem
         title="Referral"
