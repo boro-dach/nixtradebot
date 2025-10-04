@@ -1,0 +1,43 @@
+/* Базовые стили для SVG-элемента */
+.checkmark {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 3;
+  /* Используем красивый зеленый цвет */
+  stroke: #16a34a; /* Tailwind green-600 */
+  stroke-miterlimit: 10;
+  margin: 0 auto;
+}
+
+/* Анимация для круга */
+.checkmark__circle {
+  /* Длина окружности. Начальное смещение равно длине, чтобы скрыть ее */
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 3;
+  stroke-miterlimit: 10;
+  fill: none;
+  /* Анимация "рисования" круга длительностью 0.6 секунды */
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+/* Анимация для галочки */
+.checkmark__check {
+  transform-origin: 50% 50%;
+  /* Длина галочки. Скрываем ее по аналогии с кругом */
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  stroke-linecap: round; /* Скругляем концы линии */
+  /* Анимация "рисования" галочки, которая начнется с задержкой 0.8с */
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+/* Ключевые кадры для анимации "рисования" */
+@keyframes stroke {
+  100% {
+    /* В конце анимации смещение становится 0, и линия полностью видна */
+    stroke-dashoffset: 0;
+  }
+}

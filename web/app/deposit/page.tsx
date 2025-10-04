@@ -9,6 +9,7 @@ import {
 } from "@/shared/ui/dropdown-menu";
 import { Input } from "@/shared/ui/input";
 import { ChevronDown, Clipboard } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 const adresses = {
@@ -98,7 +99,9 @@ const Deposit = () => {
             {adresses[method]}
             <Clipboard />
           </Button>
-          <Button className="w-full mt-2 cursor-pointer">Я перевел</Button>
+          <Link href="/gratulation" className="w-full">
+            <Button className="w-full mt-2 cursor-pointer">Я перевел</Button>
+          </Link>
         </div>
       ) : (
         <div></div>
