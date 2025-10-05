@@ -23,12 +23,12 @@ model User {
   tgid String @id
 
   language Language @default(RU)
-  balance Float @default(0)
   verified Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  assetBalances AssetBalance[]
   transactions Transaction[]
 }
 
@@ -64,7 +64,34 @@ model Transaction {
   user User @relation(fields: [user_id], references: [tgid])
 
   type TransationType
-  currency TransactionCurrency
-  amount Int
+  cryptocurrencyId Int
+  currency         Cryptocurrency @relation(fields: [cryptocurrencyId], references: [id])
+  amount Decimal
   status Status @default(PROCESSING)
+}
+
+model Cryptocurrency {
+  id          Int     @id @default(autoincrement())
+  coingeckoId String? @unique // ID с CoinGecko, полезно для интеграции с API
+  symbol      String  @unique // Например: "BTC", "ETH", "TON"
+  name        String  // Например: "Bitcoin", "Ethereum", "Toncoin"
+  imageUrl    String? // Ссылка на иконку
+
+  // Связи для каскадного удаления или отслеживания
+  assetBalances AssetBalance[]
+  transactions  Transaction[]
+}
+
+model AssetBalance {
+  id               String @id @default(cuid())
+  amount           Decimal @default(0) // Используйте Decimal для денег и крипты во избежание ошибок точности
+  
+  userId           String
+  user             User   @relation(fields: [userId], references: [tgid])
+  
+  cryptocurrencyId Int
+  cryptocurrency   Cryptocurrency @relation(fields: [cryptocurrencyId], references: [id])
+
+  // Гарантирует, что у одного пользователя может быть только одна запись для одной криптовалюты
+  @@unique([userId, cryptocurrencyId])
 }
