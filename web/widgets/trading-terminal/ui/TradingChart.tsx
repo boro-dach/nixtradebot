@@ -1,116 +1,152 @@
-import { getPairKlines } from "@/entities/pair/api/klinesApi";
+"use client";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import {
-  createChart,
-  IChartApi,
-  UTCTimestamp,
-  CandlestickSeries,
-} from "lightweight-charts";
-import { useEffect, useRef, useState } from "react";
+  Area,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
+  ResponsiveContainer,
+  YAxis,
+} from "recharts";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/shared/ui/chart";
 
-interface TradingChartProps {
-  pair: string;
-  interval: string;
+interface ChartData {
+  timestamp: number;
+  price: number;
 }
 
-export const TradingChart: React.FC<TradingChartProps> = ({
-  pair,
-  interval,
-}) => {
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
-  // Упрощаем типизацию для совместимости
-  const seriesRef = useRef<any>(null);
+interface TradingChartProps {
+  assetId: string;
+  days: string;
+}
+
+const chartConfig = {
+  price: {
+    label: "Price",
+    color: "hsl(173 50% 80%)",
+  },
+} satisfies ChartConfig;
+
+export const TradingChart = ({ assetId, days }: TradingChartProps) => {
+  const [chartData, setChartData] = useState<ChartData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Эффект №1: Инициализация графика
   useEffect(() => {
-    if (!chartContainerRef.current) return;
-
-    const chart = createChart(chartContainerRef.current, {
-      layout: { background: { color: "transparent" }, textColor: "#d1d5db" },
-      grid: {
-        vertLines: { color: "#374151" },
-        horzLines: { color: "#374151" },
-      },
-      width: chartContainerRef.current.clientWidth,
-      height: 300,
-    });
-
-    // Правильный синтаксис для версии 5.0.8 - используем готовую константу
-    const candlestickSeries = chart.addSeries(CandlestickSeries, {
-      upColor: "#22c55e",
-      downColor: "#ef4444",
-      borderDownColor: "#ef4444",
-      borderUpColor: "#22c55e",
-      wickDownColor: "#ef4444",
-      wickUpColor: "#22c55e",
-    });
-
-    chartRef.current = chart;
-    seriesRef.current = candlestickSeries;
-
-    const handleResize = () => {
-      if (chartRef.current && chartContainerRef.current) {
-        chartRef.current.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-        });
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      if (chartRef.current) {
-        chartRef.current.remove();
-      }
-    };
-  }, []);
-
-  // Эффект №2: Загрузка данных
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!seriesRef.current) return;
-
+    const fetchChartData = async () => {
       setIsLoading(true);
-      setError(null);
-
       try {
-        const data = await getPairKlines(pair, interval, 150);
+        const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+        const response = await axios.get(
+          `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart`,
+          {
+            headers: {
+              "x-cg-demo-api-key": apiKey,
+            },
+            params: {
+              vs_currency: "usd",
+              days: days,
+            },
+          }
+        );
 
-        // Приводим данные к правильному типу
-        const typedData = data.map((item) => ({
-          ...item,
-          time: item.time as UTCTimestamp,
-        }));
+        const prices = response.data.prices;
+        const formattedData: ChartData[] = prices.map(
+          (priceData: [number, number]) => ({
+            timestamp: priceData[0],
+            price: priceData[1],
+          })
+        );
 
-        seriesRef.current.setData(typedData);
-      } catch (e) {
-        setError("Не удалось загрузить данные графика.");
-        console.error(e);
+        setChartData(formattedData);
+      } catch (error) {
+        console.error("Error fetching chart data:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
-  }, [pair, interval]);
+    fetchChartData();
+  }, [assetId, days]);
 
-  // JSX рендеринг
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[300px]">
+        <p className="text-muted-foreground">Loading chart...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative p-2 h-[316px]">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/70 z-10">
-          Загрузка...
-        </div>
-      )}
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center text-red-500 bg-zinc-950/70 z-10">
-          {error}
-        </div>
-      )}
-      <div ref={chartContainerRef} />
+    <div className="w-full h-[300px] px-4">
+      <ChartContainer config={chartConfig} className="w-full h-full">
+        <AreaChart data={chartData}>
+          <defs>
+            <linearGradient id="fillPrice" x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset="5%"
+                stopColor="var(--color-price)"
+                stopOpacity={0.8}
+              />
+              <stop
+                offset="95%"
+                stopColor="var(--color-price)"
+                stopOpacity={0.1}
+              />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} strokeDasharray="3 3" />
+          <XAxis
+            dataKey="timestamp"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            minTickGap={32}
+            tickFormatter={(value) => {
+              const date = new Date(value);
+              return date.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              });
+            }}
+          />
+          <YAxis
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            tickFormatter={(value) => `$${value.toLocaleString()}`}
+          />
+          <ChartTooltip
+            cursor={false}
+            content={
+              <ChartTooltipContent
+                labelFormatter={(value) => {
+                  return new Date(value).toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                }}
+                formatter={(value) => `$${Number(value).toLocaleString()}`}
+                indicator="dot"
+              />
+            }
+          />
+          <Area
+            dataKey="price"
+            type="monotone"
+            fill="url(#fillPrice)"
+            stroke="var(--color-price)"
+            strokeWidth={2}
+          />
+        </AreaChart>
+      </ChartContainer>
     </div>
   );
 };

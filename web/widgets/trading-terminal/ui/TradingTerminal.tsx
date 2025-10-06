@@ -1,27 +1,83 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TradingChart } from "./TradingChart";
 import { ICryptoPair } from "@/entities/pair/model/types";
 import { PairSelectDrawer } from "@/features/pair-select/ui/PairSelectDrawer";
-import { TimeframeSelect } from "@/features/timeframe-select/ui/TimeframeSelect";
-import { Button } from "@/shared/ui/button"; // Импортируйте хук
+import { Button } from "@/shared/ui/button";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { useCryptoPrice } from "../lib/hooks/useCryptoPrice";
 import { Input } from "@/shared/ui/input";
 import { telegramSelectors, useTelegramStore } from "@/entities/telegram";
 import { subtractBalance } from "@/entities/balance/api/substract";
+import axios from "axios";
+import TimeframeSelect from "@/features/timeframe-select/ui/TimeframeSelect";
+
+interface CoinGeckoPrice {
+  id: string;
+  current_price: number;
+  price_change_percentage_24h: number;
+}
 
 export const TradingTerminal = () => {
   const userId = useTelegramStore(telegramSelectors.userId);
 
   const [currentPair, setCurrentPair] = useState<ICryptoPair>({
-    symbol: "BTCUSDT",
+    symbol: "bitcoin",
     name: "Bitcoin",
   });
-  const [currentTimeframe, setCurrentTimeframe] = useState("1h");
+  const [currentTimeframe, setCurrentTimeframe] = useState("7");
   const [amount, setAmount] = useState<number | undefined>();
+  const [price, setPrice] = useState<CoinGeckoPrice | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { price, loading, error } = useCryptoPrice(currentPair.symbol);
+  useEffect(() => {
+    const fetchPrice = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+        const response = await axios.get(
+          "https://api.coingecko.com/api/v3/coins/markets",
+          {
+            headers: {
+              "x-cg-demo-api-key": apiKey,
+            },
+            params: {
+              vs_currency: "usd",
+              ids: currentPair.symbol,
+            },
+          }
+        );
+
+        if (response.data && response.data[0]) {
+          setPrice(response.data[0]);
+        }
+      } catch (err) {
+        setError("Failed to fetch price");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 30000); // Update every 30s
+
+    return () => clearInterval(interval);
+  }, [currentPair.symbol]);
+
+  const handleTrade = async (direction: "up" | "down") => {
+    if (!amount || !userId) return;
+
+    try {
+      await subtractBalance({ amount, tgid: userId });
+      // Handle trade logic here
+    } catch (err) {
+      console.error("Trade failed:", err);
+    }
+  };
+
+  const isPositive = price ? price.price_change_percentage_24h >= 0 : false;
 
   return (
     <div className="flex flex-col h-full">
@@ -35,25 +91,26 @@ export const TradingTerminal = () => {
           <h2 className="text-lg font-semibold">{currentPair.name}</h2>
           <div className="text-right">
             {loading ? (
-              <div className="text-sm text-gray-500">Загрузка...</div>
+              <div className="text-sm text-gray-500">Loading...</div>
             ) : error ? (
-              <div className="text-sm text-red-500">Ошибка: {error}</div>
+              <div className="text-sm text-red-500">{error}</div>
             ) : price ? (
               <div>
-                <div className="text-xl font-bold">${price.price}</div>
+                <div className="text-xl font-bold">
+                  ${price.current_price.toLocaleString()}
+                </div>
                 <div
                   className={`text-sm flex items-center ${
-                    parseFloat(price.priceChangePercent) >= 0
-                      ? "text-green-500"
-                      : "text-red-500"
+                    isPositive ? "text-green-500" : "text-red-500"
                   }`}
                 >
-                  {parseFloat(price.priceChangePercent) >= 0 ? (
+                  {isPositive ? (
                     <TrendingUp className="w-4 h-4 mr-1" />
                   ) : (
                     <TrendingDown className="w-4 h-4 mr-1" />
                   )}
-                  {price.priceChangePercent}%
+                  {isPositive ? "+" : ""}
+                  {price.price_change_percentage_24h.toFixed(2)}%
                 </div>
               </div>
             ) : null}
@@ -62,40 +119,36 @@ export const TradingTerminal = () => {
       </div>
 
       <div className="px-4 mt-4">
-        <TimeframeSelect
-          defaultValue={currentTimeframe}
-          onSelectTimeframe={setCurrentTimeframe}
-        />
+        <TimeframeSelect onTimescaleChange={setCurrentTimeframe} />
       </div>
 
-      <TradingChart pair={currentPair.symbol} interval={currentTimeframe} />
+      <TradingChart assetId={currentPair.symbol} days={currentTimeframe} />
 
       <div className="mt-auto p-4 flex flex-col gap-4 items-center">
         <Input
           type="number"
           value={amount}
-          onChange={(e) => {
-            setAmount(Number(e.target.value));
-          }}
-          placeholder="Сумма в USD"
+          onChange={(e) => setAmount(Number(e.target.value))}
+          placeholder="Amount in USD"
+          min="0"
+          step="0.01"
         />
         <div className="grid grid-cols-2 grid-rows-1 gap-4 w-full">
           <Button
             className="bg-red-500 hover:bg-red-600 text-white font-bold py-3"
-            disabled={loading}
-            onClick={() => {
-              subtractBalance({ amount: amount, tgid: userId });
-            }}
+            disabled={loading || !amount}
+            onClick={() => handleTrade("down")}
           >
             <TrendingDown className="w-4 h-4 mr-2" />
-            Вниз
+            Down
           </Button>
           <Button
             className="bg-green-500 hover:bg-green-600 text-white font-bold py-3"
-            disabled={loading}
+            disabled={loading || !amount}
+            onClick={() => handleTrade("up")}
           >
             <TrendingUp className="w-4 h-4 mr-2" />
-            Вверх
+            Up
           </Button>
         </div>
       </div>

@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Drawer,
   DrawerContent,
@@ -11,47 +10,9 @@ import { ScrollArea } from "@/shared/ui/scroll-area";
 import { Button } from "@/shared/ui/button";
 import { ChevronDown } from "lucide-react";
 import { ICryptoPair } from "@/entities/pair/model/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PairRow } from "@/entities/pair/ui/PairRow";
-
-const PAIRS: ICryptoPair[] = [
-  {
-    name: "Bitcoin",
-    symbol: "BTCUSDT",
-  },
-  {
-    name: "Ethereum",
-    symbol: "ETHUSDT",
-  },
-  {
-    name: "Litecoin",
-    symbol: "LTCUSDT",
-  },
-  {
-    name: "Cardano",
-    symbol: "ADAUSDT",
-  },
-  {
-    name: "Solana",
-    symbol: "SOLUSDT",
-  },
-  {
-    name: "Doge",
-    symbol: "DOGEUSDT",
-  },
-  {
-    name: "Polkadot",
-    symbol: "DOTUSDT",
-  },
-  {
-    name: "Avalanche",
-    symbol: "AVAXUSDT",
-  },
-  {
-    name: "Chainlink",
-    symbol: "LINKUSDT",
-  },
-];
+import axios from "axios";
 
 interface PairSelectDrawerProps {
   selectedPair: ICryptoPair;
@@ -63,6 +24,45 @@ export const PairSelectDrawer: React.FC<PairSelectDrawerProps> = ({
   onSelectPair,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [pairs, setPairs] = useState<ICryptoPair[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPairs = async () => {
+      try {
+        const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+        const response = await axios.get(
+          "https://api.coingecko.com/api/v3/coins/markets",
+          {
+            headers: {
+              "x-cg-demo-api-key": apiKey,
+            },
+            params: {
+              vs_currency: "usd",
+              order: "market_cap_desc",
+              per_page: 50,
+              page: 1,
+            },
+          }
+        );
+
+        const formattedPairs: ICryptoPair[] = response.data.map(
+          (coin: any) => ({
+            name: coin.name,
+            symbol: coin.id,
+          })
+        );
+
+        setPairs(formattedPairs);
+      } catch (error) {
+        console.error("Error fetching pairs:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPairs();
+  }, []);
 
   const handleSelect = (pair: ICryptoPair) => {
     onSelectPair(pair);
@@ -73,7 +73,7 @@ export const PairSelectDrawer: React.FC<PairSelectDrawerProps> = ({
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerTrigger asChild>
         <Button variant="outline" className="flex items-center space-x-2">
-          <span className="font-bold text-lg">{selectedPair.name} / USDT</span>
+          <span className="font-bold text-lg">{selectedPair.name}</span>
           <ChevronDown />
         </Button>
       </DrawerTrigger>
@@ -82,9 +82,15 @@ export const PairSelectDrawer: React.FC<PairSelectDrawerProps> = ({
           <DrawerTitle>Выберите актив</DrawerTitle>
         </DrawerHeader>
         <ScrollArea className="h-72 px-4">
-          {PAIRS.map((pair) => (
-            <PairRow key={pair.symbol} pair={pair} onSelect={handleSelect} />
-          ))}
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <p className="text-muted-foreground">Загрузка...</p>
+            </div>
+          ) : (
+            pairs.map((pair) => (
+              <PairRow key={pair.symbol} pair={pair} onSelect={handleSelect} />
+            ))
+          )}
         </ScrollArea>
       </DrawerContent>
     </Drawer>
