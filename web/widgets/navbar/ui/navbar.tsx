@@ -9,11 +9,8 @@ const Navbar = () => {
       <Link href={"/"}>
         <Home size={22} />
       </Link>
-      <Link href={""}>
+      <Link href={"/trade"}>
         <ChartSpline size={22} />
-      </Link>
-      <Link href={""}>
-        <Coins size={22} />
       </Link>
       <Link href={"portfolio"}>
         <BarChart3 size={22} />
