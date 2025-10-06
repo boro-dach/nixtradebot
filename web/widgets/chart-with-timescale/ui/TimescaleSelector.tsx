@@ -5,8 +5,17 @@ import { Ellipsis } from "lucide-react";
 
 const options: TimescaleOption[] = ["1D", "7D", "1M", "1Y", "All"];
 
-const TimescaleSelector = () => {
+interface TimescaleSelectorProps {
+  onTimescaleChange?: (option: TimescaleOption) => void;
+}
+
+const TimescaleSelector = ({ onTimescaleChange }: TimescaleSelectorProps) => {
   const { selected, setSelected } = useTimescaleStore();
+
+  const handleSelect = (option: TimescaleOption) => {
+    setSelected(option);
+    onTimescaleChange?.(option);
+  };
 
   return (
     <div className="grid grid-cols-7 bg-zinc-800 mt-4 rounded-lg p-1">
@@ -16,12 +25,11 @@ const TimescaleSelector = () => {
           variant={selected === option ? "outline" : "ghost"}
           size="sm"
           className="text-xs"
-          onClick={() => setSelected(option)}
+          onClick={() => handleSelect(option)}
         >
           {option}
         </Button>
       ))}
-
       <Button variant={"ghost"} size="sm" className="text-xs">
         Log
       </Button>
