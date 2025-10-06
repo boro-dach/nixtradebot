@@ -73,7 +73,7 @@ const Withdraw = () => {
       </DropdownMenu>
       <Input
         className="text-sm"
-        placeholder="Amount of deposit:"
+        placeholder="Amount of withdraw:"
         value={value}
         onChange={(e) => setValue(Number(e.target.value))}
       ></Input>
