@@ -71,8 +71,8 @@ export const PairSelectDrawer: React.FC<PairSelectDrawerProps> = ({
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
-      <DrawerTrigger asChild>
-        <Button variant="outline" className="flex items-center space-x-2">
+      <DrawerTrigger asChild className="mx-4">
+        <Button variant="outline" className="flex flex-row items-center gap-1">
           <span className="font-bold text-lg">{selectedPair.name}</span>
           <ChevronDown />
         </Button>

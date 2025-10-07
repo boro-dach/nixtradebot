@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { ChangeLanguageDto, CreateDto, GetLanguageDto } from './dto/user.dto';
-import { Language } from 'generated/prisma';
 
 @Injectable()
 export class UserService {
@@ -21,6 +20,15 @@ export class UserService {
     const user = await this.prisma.user.findUnique({
       where: {
         tgid: id,
+      },
+      include: {
+        // Включаем связанные балансы активов
+        assetBalances: {
+          include: {
+            // Внутри каждого баланса включаем информацию о криптовалюте
+            cryptocurrency: true,
+          },
+        },
       },
     });
 
@@ -44,7 +52,7 @@ export class UserService {
     const user = await this.findById(dto.tgid);
 
     if (!user) {
-      throw new BadRequestException('user doesnt exist');
+      throw new BadRequestException('Пользователь не существует');
     }
 
     return user.language;
@@ -52,12 +60,13 @@ export class UserService {
 
   async getAll() {
     const users = await this.prisma.user.findMany({
-      select: {
-        tgid: true,
-        language: true,
-        balance: true,
-        createdAt: true,
-        verified: true,
+      // Заменяем 'select' на 'include' для загрузки связанных данных
+      include: {
+        assetBalances: {
+          include: {
+            cryptocurrency: true,
+          },
+        },
       },
     });
 

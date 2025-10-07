@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -27,6 +26,8 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  trades Trade[]
 
   assetBalances AssetBalance[]
   transactions Transaction[]
@@ -52,7 +53,7 @@ enum Status {
   REJECTED
 }
 
-enum TransationType {
+enum TransactionType {
   DEPOSIT
   WITHDRAW
 }
@@ -63,7 +64,7 @@ model Transaction {
   user_id String
   user User @relation(fields: [user_id], references: [tgid])
 
-  type TransationType
+  type TransactionType
   cryptocurrencyId Int
   currency         Cryptocurrency @relation(fields: [cryptocurrencyId], references: [id])
   amount Decimal
@@ -72,14 +73,17 @@ model Transaction {
 
 model Cryptocurrency {
   id          Int     @id @default(autoincrement())
-  coingeckoId String? @unique // ID с CoinGecko, полезно для интеграции с API
-  symbol      String  @unique // Например: "BTC", "ETH", "TON"
-  name        String  // Например: "Bitcoin", "Ethereum", "Toncoin"
-  imageUrl    String? // Ссылка на иконку
+  coingeckoId String? @unique
+  symbol      String  @unique
+  name        String
+  imageUrl    String?
 
-  // Связи для каскадного удаления или отслеживания
   assetBalances AssetBalance[]
   transactions  Transaction[]
+
+  // Добавленные отношения для истории сделок
+  fromTrades Trade[] @relation("fromTrades")
+  toTrades   Trade[] @relation("toTrades")
 }
 
 model AssetBalance {
@@ -94,4 +98,25 @@ model AssetBalance {
 
   // Гарантирует, что у одного пользователя может быть только одна запись для одной криптовалюты
   @@unique([userId, cryptocurrencyId])
+}
+
+model Trade {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User   @relation(fields: [userId], references: [tgid])
+
+  // Какой актив продали
+  fromCryptocurrencyId Int
+  fromCryptocurrency   Cryptocurrency @relation("fromTrades", fields: [fromCryptocurrencyId], references: [id])
+  fromAmount           Decimal
+
+  // Какой актив купили
+  toCryptocurrencyId Int
+  toCryptocurrency   Cryptocurrency @relation("toTrades", fields: [toCryptocurrencyId], references: [id])
+  toAmount           Decimal
+
+  // Рыночная цена в момент сделки (например, цена BTC в USDT)
+  executedPrice Decimal
 }

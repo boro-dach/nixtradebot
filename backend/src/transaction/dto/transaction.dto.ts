@@ -1,18 +1,18 @@
-import { IsEnum, IsInt, IsString } from 'class-validator';
-import { TransactionCurrency, TransationType } from 'generated/prisma';
+import { TransactionType } from '@prisma/client';
+import { IsString, IsInt, IsDecimal, IsEnum } from 'class-validator';
 
 export class CreateTransactionDto {
-  @IsEnum(TransactionCurrency)
-  currency: TransactionCurrency;
-
-  @IsInt()
-  amount: number;
-
   @IsString()
   user_id: string;
 
-  @IsEnum(TransationType)
-  type: TransationType;
+  @IsEnum(TransactionType)
+  type: TransactionType;
+
+  @IsInt()
+  cryptocurrencyId: number;
+
+  @IsDecimal()
+  amount: string;
 }
 
 export class GetTransactionByIdDto {

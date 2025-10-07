@@ -1,77 +1,54 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { UserService } from 'src/user/user.service';
-import { AddToBalanceDto, setBalanceDto } from './dto/balance.dto';
+import {
+  CreateAssetBalanceDto,
+  UpdateAssetBalanceDto,
+} from './dto/balance.dto';
 
 @Injectable()
 export class BalanceService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly userService: UserService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async getBalance(tgid: string) {
-    const user = await this.userService.findById(tgid);
+  async getUserBalance(userId: string) {
+    const assetBalances = await this.prisma.assetBalance.findMany({
+      where: { userId },
+      include: {
+        cryptocurrency: true,
+      },
+    });
 
-    return user?.balance;
+    if (!assetBalances) {
+      throw new NotFoundException(
+        `Баланс для пользователя с ID "${userId}" не найден.`,
+      );
+    }
+    return assetBalances;
   }
 
-  async addToBalance(dto: AddToBalanceDto) {
-    const currentUser = await this.prisma.user.findUnique({
-      where: { tgid: dto.tgid },
-    });
-
-    if (!currentUser) {
-      throw new Error('User not found');
-    }
-
-    const updatedUser = await this.prisma.user.update({
-      where: {
-        tgid: dto.tgid,
-      },
+  async createAssetBalance(createAssetBalanceDto: CreateAssetBalanceDto) {
+    return this.prisma.assetBalance.create({
       data: {
-        balance: currentUser.balance + dto.amount,
+        ...createAssetBalanceDto,
+        amount: parseFloat(createAssetBalanceDto.amount),
       },
     });
-
-    return updatedUser;
   }
 
-  async subtractFromBalance(dto: AddToBalanceDto) {
-    const currentUser = await this.prisma.user.findUnique({
-      where: { tgid: dto.tgid },
-    });
-
-    if (!currentUser) {
-      throw new Error('User not found');
-    }
-
-    if (currentUser.balance < dto.amount) {
-      throw new Error('Insufficient balance');
-    }
-
-    const updatedUser = await this.prisma.user.update({
-      where: {
-        tgid: dto.tgid,
-      },
+  async updateAssetBalance(
+    id: string,
+    updateAssetBalanceDto: UpdateAssetBalanceDto,
+  ) {
+    return this.prisma.assetBalance.update({
+      where: { id },
       data: {
-        balance: currentUser.balance - dto.amount,
+        amount: parseFloat(updateAssetBalanceDto.amount),
       },
     });
-
-    return updatedUser;
   }
 
-  async setBalance(dto: setBalanceDto) {
-    const user = await this.prisma.user.update({
-      where: {
-        tgid: dto.tgid,
-      },
-      data: {
-        balance: dto.balance,
-      },
+  async removeAssetBalance(id: string) {
+    return this.prisma.assetBalance.delete({
+      where: { id },
     });
-
-    return user;
   }
 }

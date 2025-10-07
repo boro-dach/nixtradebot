@@ -1,5 +1,5 @@
+import { Language } from '@prisma/client';
 import { IsEnum, IsString } from 'class-validator';
-import { Language } from 'generated/prisma';
 
 export class CreateDto {
   @IsString()

@@ -42,6 +42,9 @@ export const TradingChart = ({ assetId, days }: TradingChartProps) => {
       setIsLoading(true);
       try {
         const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+
+        console.log("Fetching chart for:", assetId, "days:", days);
+
         const response = await axios.get(
           `https://api.coingecko.com/api/v3/coins/${assetId}/market_chart`,
           {
@@ -71,7 +74,9 @@ export const TradingChart = ({ assetId, days }: TradingChartProps) => {
       }
     };
 
-    fetchChartData();
+    if (assetId && days) {
+      fetchChartData();
+    }
   }, [assetId, days]);
 
   if (isLoading) {
@@ -126,12 +131,18 @@ export const TradingChart = ({ assetId, days }: TradingChartProps) => {
             content={
               <ChartTooltipContent
                 labelFormatter={(value) => {
-                  return new Date(value).toLocaleString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
+                  try {
+                    const date = new Date(value);
+                    if (isNaN(date.getTime())) return "Invalid Date";
+                    return date.toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+                  } catch {
+                    return "Invalid Date";
+                  }
                 }}
                 formatter={(value) => `$${Number(value).toLocaleString()}`}
                 indicator="dot"

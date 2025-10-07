@@ -80,7 +80,7 @@ export const TradingTerminal = () => {
   const isPositive = price ? price.price_change_percentage_24h >= 0 : false;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col mt-4">
       <PairSelectDrawer
         selectedPair={currentPair}
         onSelectPair={setCurrentPair}
@@ -118,13 +118,13 @@ export const TradingTerminal = () => {
         </div>
       </div>
 
-      <div className="px-4 mt-4">
+      <div className="flex flex-col gap-2 px-4 my-4">
         <TimeframeSelect onTimescaleChange={setCurrentTimeframe} />
       </div>
 
       <TradingChart assetId={currentPair.symbol} days={currentTimeframe} />
 
-      <div className="mt-auto p-4 flex flex-col gap-4 items-center">
+      <div className="p-4 flex flex-col gap-4 items-center">
         <Input
           type="number"
           value={amount}
@@ -135,20 +135,20 @@ export const TradingTerminal = () => {
         />
         <div className="grid grid-cols-2 grid-rows-1 gap-4 w-full">
           <Button
-            className="bg-red-500 hover:bg-red-600 text-white font-bold py-3"
-            disabled={loading || !amount}
-            onClick={() => handleTrade("down")}
-          >
-            <TrendingDown className="w-4 h-4 mr-2" />
-            Down
-          </Button>
-          <Button
             className="bg-green-500 hover:bg-green-600 text-white font-bold py-3"
             disabled={loading || !amount}
             onClick={() => handleTrade("up")}
           >
             <TrendingUp className="w-4 h-4 mr-2" />
-            Up
+            Купить
+          </Button>
+          <Button
+            className="bg-red-500 hover:bg-red-600 text-white font-bold py-3"
+            disabled={loading || !amount}
+            onClick={() => handleTrade("down")}
+          >
+            <TrendingDown className="w-4 h-4 mr-2" />
+            Продать
           </Button>
         </div>
       </div>

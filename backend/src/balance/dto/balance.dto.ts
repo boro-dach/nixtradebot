@@ -1,17 +1,17 @@
-import { IsNumber, IsString } from 'class-validator';
+import { IsString, IsInt, IsDecimal } from 'class-validator';
 
-export class AddToBalanceDto {
-  @IsNumber()
-  amount: number;
-
+export class CreateAssetBalanceDto {
   @IsString()
-  tgid: string;
+  userId: string;
+
+  @IsInt()
+  cryptocurrencyId: number;
+
+  @IsDecimal()
+  amount: string;
 }
 
-export class setBalanceDto {
-  @IsNumber()
-  balance: number;
-
-  @IsString()
-  tgid: string;
+export class UpdateAssetBalanceDto {
+  @IsDecimal()
+  amount: string;
 }
