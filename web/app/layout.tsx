@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
-import Header from "@/widgets/header/ui/header";
 import { ThemeProvider } from "@/shared/providers/theme-provider";
 import { TelegramProvider } from "@/shared/providers/telegram-provider";
 import Navbar from "@/widgets/navbar/ui/navbar";
