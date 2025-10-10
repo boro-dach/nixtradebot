@@ -1,38 +1,48 @@
+// Файл: src/widgets/portfolio-donut-chart/ui/PortfolioDonutChart.tsx
+
 "use client";
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { mockAssets } from "@/entities/asset/model/data";
 import { formatCurrency, formatPercentage } from "@/shared/lib/formatters";
+import { PortfolioAsset } from "@/app/portfolio/page";
 
-export const PortfolioDonutChart = () => {
+// Определяем цвета (можно вынести в константы)
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AF19FF"];
+
+export const PortfolioDonutChart = ({
+  assets,
+}: {
+  assets: PortfolioAsset[];
+}) => {
   const { totalBalance, chartData } = useMemo(() => {
-    const total = mockAssets.reduce(
-      (sum, asset) => sum + asset.amount * asset.price,
-      0
-    );
-    const data = mockAssets.map((asset) => ({
-      name: asset.name,
-      value: asset.amount * asset.price,
-      color: asset.color,
-      percentage: ((asset.amount * asset.price) / total) * 100,
-    }));
-    return { totalBalance: total, chartData: data };
-  }, []);
+    if (!assets || assets.length === 0) {
+      return { totalBalance: 0, chartData: [] };
+    }
 
-  const portfolioChange = 33.2;
+    // Считаем общую сумму прямо из подготовленных данных
+    const total = assets.reduce((sum, asset) => sum + asset.value, 0);
+
+    const data = assets.map((asset, index) => ({
+      name: asset.name,
+      value: asset.value,
+      color: COLORS[index % COLORS.length],
+      percentage: (asset.value / total) * 100,
+    }));
+
+    return { totalBalance: total, chartData: data };
+  }, [assets]);
 
   return (
     <div className="p-4 flex flex-col items-center">
-      {/* Диаграмма */}
-      <div className="relative w-64 h-64">
+      <div className="relative w-72 h-72">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={chartData}
               cx="50%"
               cy="50%"
-              innerRadius={90}
-              outerRadius={105}
+              innerRadius={110}
+              outerRadius={120}
               dataKey="value"
               stroke="none"
               cornerRadius={8}
@@ -44,19 +54,16 @@ export const PortfolioDonutChart = () => {
             </Pie>
           </PieChart>
         </ResponsiveContainer>
-        {/* Текст в центре */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <p className="text-zinc-400 text-sm">Total balance</p>
           <p className="text-3xl font-bold text-white mt-1">
             {formatCurrency(totalBalance)}
           </p>
-          <p className={`text-green-400 font-semibold mt-1`}>
+          {/* <p className={`text-green-400 font-semibold mt-1`}>
             {formatPercentage(portfolioChange)}
-          </p>
+          </p> */}
         </div>
       </div>
-
-      {/* Легенда */}
       <div className="flex flex-wrap justify-center gap-4 mt-6">
         {chartData.map((entry) => (
           <div key={entry.name} className="flex items-center gap-2 text-sm">

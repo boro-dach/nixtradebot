@@ -10,10 +10,15 @@ import {
   GetTransactionsByUserDto,
 } from './dto/transaction.dto';
 import { Prisma, Status, TransactionType } from '@prisma/client';
+import { firstValueFrom } from 'rxjs';
+import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class TransactionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly httpService: HttpService, // Убедитесь, что HttpModule импортирован в transaction.module.ts
+  ) {}
 
   async create(dto: CreateTransactionDto) {
     const user = await this.prisma.user.findUnique({
@@ -25,24 +30,70 @@ export class TransactionService {
       );
     }
 
-    const currency = await this.prisma.cryptocurrency.findUnique({
-      where: { id: dto.cryptocurrencyId },
+    let currency = await this.prisma.cryptocurrency.findUnique({
+      where: { coingeckoId: dto.coingeckoId },
     });
+
     if (!currency) {
-      throw new NotFoundException(
-        `Криптовалюта с ID ${dto.cryptocurrencyId} не найдена.`,
-      );
+      currency = await this.prisma.cryptocurrency.create({
+        data: {
+          coingeckoId: dto.coingeckoId,
+          symbol: dto.coingeckoId.toUpperCase(),
+          name: dto.coingeckoId,
+        },
+      });
+    }
+
+    if (dto.type === TransactionType.WITHDRAW) {
+      const assetBalance = await this.prisma.assetBalance.findUnique({
+        where: {
+          userId_cryptocurrencyId: {
+            userId: dto.user_id,
+            cryptocurrencyId: currency.id,
+          },
+        },
+      });
+
+      const requestedAmount = new Prisma.Decimal(dto.amount);
+
+      if (!assetBalance || assetBalance.amount.lt(requestedAmount)) {
+        throw new BadRequestException(
+          'Недостаточно средств на балансе для создания заявки на вывод.',
+        );
+      }
     }
 
     const transaction = await this.prisma.transaction.create({
       data: {
         user_id: dto.user_id,
         type: dto.type,
-        cryptocurrencyId: dto.cryptocurrencyId,
-        // Теперь тип Prisma.Decimal будет найден
+        cryptocurrencyId: currency.id,
         amount: new Prisma.Decimal(dto.amount),
       },
+      include: { currency: true, user: true },
     });
+
+    const notificationPayload = {
+      user_id: transaction.user_id,
+      crypto_name: transaction.currency.name,
+      amount: transaction.amount.toString(),
+      tx_type: transaction.type,
+      transaction_id: transaction.id,
+    };
+
+    try {
+      const notifyUrl =
+        process.env.NOTIFICATION_API_URL ||
+        'http://localhost:8000/notify-transaction';
+      await firstValueFrom(
+        this.httpService.post(notifyUrl, notificationPayload),
+      );
+    } catch (error) {
+      console.error(
+        'CRITICAL: Failed to send transaction notification!',
+        error.message,
+      );
+    }
 
     return transaction;
   }
@@ -53,16 +104,14 @@ export class TransactionService {
         user: true,
         currency: true,
       },
+      orderBy: { id: 'desc' },
     });
   }
 
   async getById(dto: GetTransactionByIdDto) {
     const transaction = await this.prisma.transaction.findUnique({
       where: { id: dto.id },
-      include: {
-        user: true,
-        currency: true,
-      },
+      include: { user: true, currency: true },
     });
     if (!transaction) {
       throw new NotFoundException(`Транзакция с ID ${dto.id} не найдена.`);
@@ -73,33 +122,23 @@ export class TransactionService {
   async getByUser(dto: GetTransactionsByUserDto) {
     return this.prisma.transaction.findMany({
       where: { user_id: dto.user_id },
-      include: {
-        currency: true,
-      },
-      orderBy: {
-        // createdAt: 'desc', // Пример сортировки
-      },
+      include: { currency: true },
+      orderBy: { id: 'desc' },
     });
   }
 
   async accept(id: string) {
-    // prisma.$transaction принимает callback с типизированным клиентом
-    return this.prisma.$transaction(async (prisma) => {
-      const transaction = await prisma.transaction.findUnique({
-        where: { id },
-      });
-
-      if (!transaction) {
+    return this.prisma.$transaction(async (tx) => {
+      const transaction = await tx.transaction.findUnique({ where: { id } });
+      if (!transaction)
         throw new NotFoundException(`Транзакция с ID ${id} не найдена.`);
-      }
-
       if (transaction.status !== Status.PROCESSING) {
         throw new BadRequestException(
-          `Транзакцию можно подтвердить только из статуса PROCESSING.`,
+          `Подтвердить можно только транзакцию в статусе PROCESSING.`,
         );
       }
 
-      const uniqueBalanceIdentifier = {
+      const whereBalance = {
         userId_cryptocurrencyId: {
           userId: transaction.user_id,
           cryptocurrencyId: transaction.cryptocurrencyId,
@@ -107,13 +146,9 @@ export class TransactionService {
       };
 
       if (transaction.type === TransactionType.DEPOSIT) {
-        await prisma.assetBalance.upsert({
-          where: uniqueBalanceIdentifier,
-          update: {
-            amount: {
-              increment: transaction.amount,
-            },
-          },
+        await tx.assetBalance.upsert({
+          where: whereBalance,
+          update: { amount: { increment: transaction.amount } },
           create: {
             userId: transaction.user_id,
             cryptocurrencyId: transaction.cryptocurrencyId,
@@ -123,29 +158,23 @@ export class TransactionService {
       }
 
       if (transaction.type === TransactionType.WITHDRAW) {
-        const currentBalance = await prisma.assetBalance.findUnique({
-          where: uniqueBalanceIdentifier,
+        const currentBalance = await tx.assetBalance.findUnique({
+          where: whereBalance,
         });
         if (!currentBalance || currentBalance.amount.lt(transaction.amount)) {
           throw new BadRequestException('Недостаточно средств для вывода.');
         }
-
-        await prisma.assetBalance.update({
-          where: uniqueBalanceIdentifier,
-          data: {
-            amount: {
-              decrement: transaction.amount,
-            },
-          },
+        await tx.assetBalance.update({
+          where: whereBalance,
+          data: { amount: { decrement: transaction.amount } },
         });
       }
 
-      const updatedTransaction = await prisma.transaction.update({
+      return tx.transaction.update({
         where: { id },
         data: { status: Status.CONFIRMED },
+        include: { user: true, currency: true },
       });
-
-      return updatedTransaction;
     });
   }
 
@@ -153,19 +182,18 @@ export class TransactionService {
     const transaction = await this.prisma.transaction.findUnique({
       where: { id },
     });
-
-    if (!transaction) {
+    if (!transaction)
       throw new NotFoundException(`Транзакция с ID ${id} не найдена.`);
-    }
     if (transaction.status !== Status.PROCESSING) {
       throw new BadRequestException(
-        `Транзакцию можно отклонить только из статуса PROCESSING.`,
+        `Отклонить можно только транзакцию в статусе PROCESSING.`,
       );
     }
 
     return this.prisma.transaction.update({
       where: { id },
       data: { status: Status.REJECTED },
+      include: { user: true, currency: true },
     });
   }
 }

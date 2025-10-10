@@ -4,7 +4,7 @@ from aiogram.enums import ParseMode
 from keyboards.inline import get_profile_menu
 from keyboards.translations import TEXTS
 from api.language import get_user_language
-from api.balance import fetch_balance
+from api.balance import get_user_balance
 from pathlib import Path
 import logging
 
@@ -19,7 +19,7 @@ async def profile_handler(message: types.Message):
         user_id = message.from_user.id
         
         # Fetch balance with fallback
-        balance_value = await fetch_balance(tgid=user_id)
+        balance_value = await get_user_balance(tgid=user_id)
         balance = balance_value 
         # if balance_value is not None else 0.0
         

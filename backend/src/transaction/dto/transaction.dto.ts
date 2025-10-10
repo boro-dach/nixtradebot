@@ -8,8 +8,8 @@ export class CreateTransactionDto {
   @IsEnum(TransactionType)
   type: TransactionType;
 
-  @IsInt()
-  cryptocurrencyId: number;
+  @IsString()
+  coingeckoId: string;
 
   @IsDecimal()
   amount: string;

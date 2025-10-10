@@ -7,6 +7,8 @@ import { TradingTerminal } from "@/widgets/trading-terminal/ui/TradingTerminal";
 import { TradeHistoryList } from "@/widgets/trade-history-list/ui/TradeHistoryList";
 import { Header } from "@/widgets/header/ui/header";
 
+const userId = "843961428";
+
 const TradingInfo = () => (
   <div className="p-4 h-full overflow-auto">
     <h2 className="text-lg font-semibold mb-4">Trading Info</h2>
@@ -44,7 +46,6 @@ const TradingInfo = () => (
 );
 
 export default function TradingPage() {
-  // Единственное состояние страницы - какая вкладка активна в данный момент.
   const [activeTab, setActiveTab] = useState<"trade" | "history" | "info">(
     "trade"
   );
@@ -53,7 +54,6 @@ export default function TradingPage() {
     <div className="flex flex-col h-screen bg-background">
       <Header />
 
-      {/* 2. Навигация по вкладкам. Управляет локальным состоянием страницы. */}
       <div className="flex border-b bg-card">
         <button
           onClick={() => setActiveTab("trade")}
@@ -91,8 +91,8 @@ export default function TradingPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {activeTab === "trade" && <TradingTerminal />}
-        {activeTab === "history" && <TradeHistoryList />}
+        {activeTab === "trade" && <TradingTerminal userId={userId} />}
+        {activeTab === "history" && <TradeHistoryList userId={userId} />}
         {activeTab === "info" && <TradingInfo />}
       </div>
     </div>

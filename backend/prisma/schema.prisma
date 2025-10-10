@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -19,18 +13,21 @@ enum Language {
 }
 
 model User {
-  tgid String @id
-
-  language Language @default(RU)
-  verified Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  trades Trade[]
-
-  assetBalances AssetBalance[]
-  transactions Transaction[]
+  tgid              String          @id
+  language          Language        @default(RU)
+  verified          Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  isLucky           Boolean         @default(false)
+  isBannedWithdraw  Boolean         @default(false)
+  isBannedInBot     Boolean         @default(false)
+  stopLimit         Int             @default(0)
+  hasStopLimit      Boolean         @default(false)
+  
+  trades            Trade[]
+  assetBalances     AssetBalance[]
+  transactions      Transaction[]
+  positions         Position[]
 }
 
 model Admin {
@@ -73,22 +70,23 @@ model Transaction {
 
 model Cryptocurrency {
   id          Int     @id @default(autoincrement())
-  coingeckoId String? @unique
+  coingeckoId String  @unique // лучше сделать обязательным
   symbol      String  @unique
   name        String
   imageUrl    String?
 
   assetBalances AssetBalance[]
   transactions  Transaction[]
+  positions     Position[]
 
-  // Добавленные отношения для истории сделок
   fromTrades Trade[] @relation("fromTrades")
   toTrades   Trade[] @relation("toTrades")
 }
 
+
 model AssetBalance {
   id               String @id @default(cuid())
-  amount           Decimal @default(0) // Используйте Decimal для денег и крипты во избежание ошибок точности
+  amount           Decimal @default(0)
   
   userId           String
   user             User   @relation(fields: [userId], references: [tgid])
@@ -96,7 +94,6 @@ model AssetBalance {
   cryptocurrencyId Int
   cryptocurrency   Cryptocurrency @relation(fields: [cryptocurrencyId], references: [id])
 
-  // Гарантирует, что у одного пользователя может быть только одна запись для одной криптовалюты
   @@unique([userId, cryptocurrencyId])
 }
 
@@ -107,16 +104,60 @@ model Trade {
   userId    String
   user      User   @relation(fields: [userId], references: [tgid])
 
-  // Какой актив продали
   fromCryptocurrencyId Int
   fromCryptocurrency   Cryptocurrency @relation("fromTrades", fields: [fromCryptocurrencyId], references: [id])
   fromAmount           Decimal
 
-  // Какой актив купили
   toCryptocurrencyId Int
   toCryptocurrency   Cryptocurrency @relation("toTrades", fields: [toCryptocurrencyId], references: [id])
   toAmount           Decimal
 
-  // Рыночная цена в момент сделки (например, цена BTC в USDT)
   executedPrice Decimal
+}
+
+model PriceManipulation {
+  id         String   @id @default(cuid())
+  assetId    String
+  multiplier Decimal  @db.Decimal(10, 4)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([assetId, isActive])
+}
+
+enum PositionType {
+  LONG
+  SHORT
+}
+
+enum PositionStatus {
+  OPEN
+  CLOSED
+}
+
+model Position {
+  id                String         @id @default(cuid())
+  userId            String
+  user              User           @relation(fields: [userId], references: [tgid])
+  
+  cryptocurrencyId  Int
+  cryptocurrency    Cryptocurrency @relation(fields: [cryptocurrencyId], references: [id])
+  
+  type              PositionType
+  status            PositionStatus @default(OPEN)
+  
+  entryPrice        Decimal
+  amount            Decimal
+  investedAmount    Decimal
+  
+  currentPrice      Decimal?
+  currentValue      Decimal?
+  profitLoss        Decimal?
+  
+  openedAt          DateTime       @default(now())
+  closedAt          DateTime?
+  
+  @@index([userId, status])
+  @@index([status])
 }

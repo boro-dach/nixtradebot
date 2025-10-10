@@ -1,32 +1,36 @@
-import { useState, useEffect } from "react";
-import { fetchTotalBalance } from ".";
+import { apiClient } from "@/shared/api/api";
+import { useQuery } from "@tanstack/react-query";
 
-export const useTotalBalance = (userId: string | number | null) => {
-  const [totalBalance, setTotalBalance] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export interface AssetBalance {
+  id: string;
+  amount: string;
+  userId: string;
+  cryptocurrencyId: number;
+  cryptocurrency: {
+    id: number;
+    coingeckoId: string;
+    symbol: string;
+    name: string;
+    currentPrice: number;
+  };
+}
 
-  useEffect(() => {
-    if (!userId) {
-      setIsLoading(false);
-      return;
-    }
+export const fetchBalance = async (
+  userId: string | number
+): Promise<AssetBalance[]> => {
+  const response = await apiClient.get<AssetBalance[]>(`/balance/${userId}`);
+  return response.data;
+};
 
-    const getBalance = async () => {
-      try {
-        setIsLoading(true);
-        const balance = await fetchTotalBalance(userId);
-        setTotalBalance(balance);
-      } catch (err) {
-        console.error("Failed to fetch total balance:", err);
-        setError("Could not load balance");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+export const useBalance = (userId: string | number) => {
+  const {
+    data: balance,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["balance", userId],
+    queryFn: () => fetchBalance(userId),
+  });
 
-    getBalance();
-  }, [userId]);
-
-  return { totalBalance, isLoading, error };
+  return { balance, isLoading, error };
 };

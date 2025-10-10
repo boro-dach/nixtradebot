@@ -1,39 +1,34 @@
-import aiohttp
+import os
 import logging
-from typing import Union, Optional
+import aiohttp
+from dotenv import load_dotenv
+from typing import Union, List 
 
-async def fetch_balance(tgid: Union[str, int], amount: int = 0) -> Optional[float]:
-    url = f"http://localhost:5000/balance/get"
-    payload = {
-        "tgid": str(tgid),
-        "amount": amount
-    }
-    
+load_dotenv()
+
+BASE_URL = os.getenv("API_BASE_URL")
+
+async def get_user_balance(user_id: int) -> Union[List[dict], None]:
+    url = f"{BASE_URL}/balance/{user_id}"
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as response:
+            async with session.get(url) as response:
                 if response.status == 200:
-                    data = await response.json()
-                    balance = data.get("balance")
-                    
-                    # Ensure we return a float or None
-                    if balance is not None:
-                        return float(balance)
-                    else:
-                        logging.warning(f"Balance not found in API response for tgid: {tgid}")
-                        return None
-                        
+                    return await response.json()
+                elif response.status == 404:
+                    logging.warning(f"User with ID {user_id} not found in API.")
+                    return [] 
                 else:
-                    error_text = await response.text()
-                    logging.error(f"API Error: Status {response.status}, Response: {error_text}")
+                    logging.error(
+                        f"Failed to get balance for user {user_id}. "
+                        f"Status: {response.status}, "
+                        f"Response: {await response.text()}"
+                    )
                     return None
-                    
-    except aiohttp.ClientError as e:
-        logging.error(f"Connection error to API: {e}")
+    except aiohttp.ClientConnectorError as e:
+        logging.error(f"API connection error: {e}")
         return None
-    except ValueError as e:
-        logging.error(f"Error parsing API response: {e}")
-        return None
-    except Exception as e:
-        logging.error(f"Unexpected error in fetch_balance: {e}")
-        return None
+
+async def update_asset_balance(asset_balance_id: str, new_amount: float) -> bool:
+    # ...
+    return False

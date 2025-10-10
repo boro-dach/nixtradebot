@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { ChangeLanguageDto, CreateDto, GetLanguageDto } from './dto/user.dto';
 
@@ -80,5 +84,17 @@ export class UserService {
     });
 
     return user;
+  }
+
+  async banUser(tgid: string, isBanned: boolean) {
+    const user = await this.prisma.user.findUnique({ where: { tgid } });
+    if (!user) {
+      throw new NotFoundException(`Пользователь с ID ${tgid} не найден.`);
+    }
+
+    return this.prisma.user.update({
+      where: { tgid },
+      data: { isBannedInBot: isBanned },
+    });
   }
 }

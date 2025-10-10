@@ -1,161 +1,279 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
-import { Prisma } from '@prisma/client';
-import { ExecuteTradeDto, TradeType } from './dto/trade.dto';
+import { MarketService } from '../market/market.service';
+import {
+  ClosePositionDto,
+  ExecuteSwapDto,
+  OpenPositionDto,
+} from './dto/trade.dto';
+import { PositionStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class TradeService {
-  private readonly COINGECKO_API_URL = 'https://api.coingecko.com/api/v3';
-
   constructor(
     private readonly prisma: PrismaService,
-    private readonly httpService: HttpService,
+    private readonly marketService: MarketService,
   ) {}
 
-  async getMarketData(assetSymbol: string) {
-    const asset = await this.prisma.cryptocurrency.findUnique({
-      where: { symbol: assetSymbol },
-    });
-    if (!asset || !asset.coingeckoId) {
-      throw new NotFoundException(
-        `Актив ${assetSymbol} не найден или для него не настроен coingeckoId.`,
-      );
+  /**
+   * Логика для прямого обмена (свапа) активов.
+   */
+  async executeSwap(dto: ExecuteSwapDto) {
+    const { userId, fromAssetCoingeckoId, toAssetCoingeckoId, fromAmount } =
+      dto;
+
+    if (fromAssetCoingeckoId === toAssetCoingeckoId) {
+      throw new BadRequestException('Нельзя обменять актив на самого себя.');
     }
 
-    try {
-      const url = `${this.COINGECKO_API_URL}/simple/price?ids=${asset.coingeckoId}&vs_currencies=usd&include_24hr_change=true`;
-      const response = await firstValueFrom(this.httpService.get(url));
-      const data = response.data[asset.coingeckoId];
+    const [fromAssetPriceData, toAssetPriceData] = await Promise.all([
+      this.marketService.getAssetPrice(fromAssetCoingeckoId),
+      this.marketService.getAssetPrice(toAssetCoingeckoId),
+    ]);
 
-      if (!data) {
-        throw new Error('API не вернуло данные для актива.');
+    if (!fromAssetPriceData || !toAssetPriceData) {
+      throw new InternalServerErrorException(
+        'Не удалось получить курсы валют.',
+      );
+    }
+    const fromAssetPrice = fromAssetPriceData.current_price;
+    const toAssetPrice = toAssetPriceData.current_price;
+
+    const toAmount = (fromAmount * fromAssetPrice) / toAssetPrice;
+
+    return this.prisma.$transaction(async (tx) => {
+      const fromCurrency = await tx.cryptocurrency.findUnique({
+        where: { coingeckoId: fromAssetCoingeckoId },
+      });
+      const toCurrency = await tx.cryptocurrency.findUnique({
+        where: { coingeckoId: toAssetCoingeckoId },
+      });
+
+      if (!fromCurrency || !toCurrency) {
+        throw new NotFoundException('Один из активов не найден в системе.');
       }
 
-      return {
-        price: data.usd,
-        priceChange24hPercent: data.usd_24h_change,
-      };
-    } catch (error) {
-      console.error('Ошибка API CoinGecko:', error.message);
-      throw new BadRequestException(
-        `Не удалось получить рыночные данные для ${assetSymbol}`,
-      );
-    }
-  }
-
-  async executeTrade(dto: ExecuteTradeDto) {
-    // 1. Получаем из БД информацию об активах и пользователе
-    const assetToTrade = await this.prisma.cryptocurrency.findUnique({
-      where: { symbol: dto.assetToTradeSymbol },
-    });
-    const baseAsset = await this.prisma.cryptocurrency.findUnique({
-      where: { symbol: dto.baseAssetSymbol },
-    });
-
-    if (!assetToTrade || !baseAsset || !assetToTrade.coingeckoId) {
-      throw new NotFoundException(
-        'Один из активов не найден или не настроен для торговли.',
-      );
-    }
-
-    // 2. Получаем актуальную рыночную цену
-    const marketData = await this.getMarketData(dto.assetToTradeSymbol);
-    const currentPrice = marketData.price;
-
-    // 3. Рассчитываем суммы для обмена, используя Decimal для точности
-    const amountToTrade = new Prisma.Decimal(dto.amountInBaseAsset).div(
-      currentPrice,
-    );
-    const amountInBase = new Prisma.Decimal(dto.amountInBaseAsset);
-
-    const fromAsset =
-      dto.tradeType === TradeType.BUY ? baseAsset : assetToTrade;
-    const toAsset = dto.tradeType === TradeType.BUY ? assetToTrade : baseAsset;
-    const amountToDecrement =
-      dto.tradeType === TradeType.BUY ? amountInBase : amountToTrade;
-    const amountToIncrement =
-      dto.tradeType === TradeType.BUY ? amountToTrade : amountInBase;
-
-    // 4. Выполняем все операции в рамках одной атомарной транзакции
-    return this.prisma.$transaction(async (tx) => {
-      // 4.1. Находим баланс списываемого актива и блокируем его
-      const fromBalance = await tx.assetBalance.findUnique({
+      const fromAssetBalance = await tx.assetBalance.findUnique({
         where: {
           userId_cryptocurrencyId: {
-            userId: dto.userId,
-            cryptocurrencyId: fromAsset.id,
+            userId,
+            cryptocurrencyId: fromCurrency.id,
           },
         },
       });
-
-      // 4.2. Проверяем, достаточно ли средств
-      if (!fromBalance || fromBalance.amount.lt(amountToDecrement)) {
-        throw new BadRequestException(
-          `Недостаточно средств на балансе ${fromAsset.symbol}.`,
-        );
+      if (!fromAssetBalance || fromAssetBalance.amount.lt(fromAmount)) {
+        throw new BadRequestException('Недостаточно средств для обмена.');
       }
 
-      // 4.3. Списываем средства
       await tx.assetBalance.update({
-        where: { id: fromBalance.id },
-        data: { amount: { decrement: amountToDecrement } },
+        where: { id: fromAssetBalance.id },
+        data: { amount: { decrement: new Prisma.Decimal(fromAmount) } },
       });
 
-      // 4.4. Зачисляем средства (upsert создаст баланс, если его нет)
+      await tx.assetBalance.upsert({
+        where: {
+          userId_cryptocurrencyId: { userId, cryptocurrencyId: toCurrency.id },
+        },
+        update: { amount: { increment: new Prisma.Decimal(toAmount) } },
+        create: {
+          userId,
+          cryptocurrencyId: toCurrency.id,
+          amount: new Prisma.Decimal(toAmount),
+        },
+      });
+
+      await tx.trade.create({
+        data: {
+          userId,
+          fromCryptocurrencyId: fromCurrency.id,
+          fromAmount: new Prisma.Decimal(fromAmount),
+          toCryptocurrencyId: toCurrency.id,
+          toAmount: new Prisma.Decimal(toAmount),
+          executedPrice: new Prisma.Decimal(fromAssetPrice / toAssetPrice),
+        },
+      });
+
+      return { message: 'Обмен успешно выполнен.' };
+    });
+  }
+
+  /**
+   * Логика для открытия торговой позиции (LONG/SHORT).
+   */
+  async openPosition(dto: OpenPositionDto) {
+    // Ищем актив по coingeckoId для надежности
+    const asset = await this.prisma.cryptocurrency.findUnique({
+      where: { coingeckoId: dto.assetCoingeckoId },
+    });
+
+    if (!asset) {
+      throw new NotFoundException(
+        `Актив ${dto.assetCoingeckoId} не найден в базе. Запустите синхронизацию.`,
+      );
+    }
+
+    const marketData = await this.marketService.getAssetPrice(
+      asset.coingeckoId,
+    );
+    const entryPrice = marketData.current_price;
+    const coinAmount = dto.amount / entryPrice;
+
+    const position = await this.prisma.position.create({
+      data: {
+        userId: dto.userId,
+        cryptocurrencyId: asset.id,
+        type: dto.type,
+        status: PositionStatus.OPEN,
+        entryPrice: new Prisma.Decimal(entryPrice),
+        amount: new Prisma.Decimal(coinAmount),
+        investedAmount: new Prisma.Decimal(dto.amount),
+        currentPrice: new Prisma.Decimal(entryPrice),
+        currentValue: new Prisma.Decimal(dto.amount),
+        profitLoss: new Prisma.Decimal(0),
+      },
+      include: { cryptocurrency: true },
+    });
+
+    return position;
+  }
+
+  /**
+   * Логика для закрытия торговой позиции.
+   */
+  async closePosition(dto: ClosePositionDto) {
+    const position = await this.prisma.position.findUnique({
+      where: { id: dto.positionId },
+      include: { cryptocurrency: true },
+    });
+
+    if (!position || position.userId !== dto.userId)
+      throw new NotFoundException('Позиция не найдена');
+    if (position.status === PositionStatus.CLOSED)
+      throw new BadRequestException('Позиция уже закрыта');
+    if (!position.cryptocurrency.coingeckoId)
+      throw new BadRequestException('Актив не настроен для торговли');
+
+    const user = await this.prisma.user.findUnique({
+      where: { tgid: dto.userId },
+    });
+    const marketData = await this.marketService.getAssetPrice(
+      position.cryptocurrency.coingeckoId,
+      user?.isLucky ? dto.userId : undefined,
+    );
+
+    const currentPrice = marketData.current_price;
+    const currentValue = position.amount.toNumber() * currentPrice;
+    const profitLoss = currentValue - position.investedAmount.toNumber();
+
+    // В рамках одной транзакции закрываем позицию и начисляем/списываем баланс USDT
+    return this.prisma.$transaction(async (tx) => {
+      // Находим USDT в базе
+      const usdtCurrency = await tx.cryptocurrency.findUnique({
+        where: { coingeckoId: 'tether' },
+      });
+      if (!usdtCurrency)
+        throw new InternalServerErrorException('USDT не найден в системе.');
+
+      // Рассчитываем итоговую сумму к начислению
+      const finalAmount = position.investedAmount.toNumber() + profitLoss;
+
+      // Начисляем/списываем USDT
       await tx.assetBalance.upsert({
         where: {
           userId_cryptocurrencyId: {
             userId: dto.userId,
-            cryptocurrencyId: toAsset.id,
+            cryptocurrencyId: usdtCurrency.id,
           },
         },
-        update: { amount: { increment: amountToIncrement } },
+        update: { amount: { increment: new Prisma.Decimal(finalAmount) } },
         create: {
           userId: dto.userId,
-          cryptocurrencyId: toAsset.id,
-          amount: amountToIncrement,
+          cryptocurrencyId: usdtCurrency.id,
+          amount: new Prisma.Decimal(finalAmount),
         },
       });
 
-      // 4.5. СОЗДАЕМ ЗАПИСЬ В ИСТОРИИ СДЕЛОК
-      const tradeRecord = await tx.trade.create({
+      // Закрываем позицию
+      return tx.position.update({
+        where: { id: dto.positionId },
         data: {
-          userId: dto.userId,
-          fromCryptocurrencyId: fromAsset.id,
-          fromAmount: amountToDecrement,
-          toCryptocurrencyId: toAsset.id,
-          toAmount: amountToIncrement,
-          executedPrice: new Prisma.Decimal(currentPrice),
+          status: PositionStatus.CLOSED,
+          currentPrice: new Prisma.Decimal(currentPrice),
+          currentValue: new Prisma.Decimal(currentValue),
+          profitLoss: new Prisma.Decimal(profitLoss),
+          closedAt: new Date(),
         },
+        include: { cryptocurrency: true },
       });
-
-      return tradeRecord; // Возвращаем созданную запись о сделке
     });
   }
 
-  async getHistoryByUser(userId: string) {
-    const trades = await this.prisma.trade.findMany({
-      where: { userId },
-      include: {
-        fromCryptocurrency: {
-          select: { symbol: true, name: true, imageUrl: true },
-        },
-        toCryptocurrency: {
-          select: { symbol: true, name: true, imageUrl: true },
-        },
-      },
-      // Сортируем по дате, чтобы последние сделки были вверху
-      orderBy: {
-        createdAt: 'desc',
-      },
+  /**
+   * Получение и обновление P/L для открытых позиций.
+   */
+  async getOpenPositions(userId: string) {
+    const positions = await this.prisma.position.findMany({
+      where: { userId, status: PositionStatus.OPEN },
+      include: { cryptocurrency: true },
+      orderBy: { openedAt: 'desc' },
     });
 
-    return trades;
+    const user = await this.prisma.user.findUnique({ where: { tgid: userId } });
+
+    // Используем Promise.all для параллельного обновления данных
+    const updatedPositions = await Promise.all(
+      positions.map(async (position) => {
+        if (!position.cryptocurrency.coingeckoId) return position;
+
+        const marketData = await this.marketService.getAssetPrice(
+          position.cryptocurrency.coingeckoId,
+          user?.isLucky ? userId : undefined,
+        );
+
+        const currentPrice = marketData.current_price;
+        const currentValue = position.amount.toNumber() * currentPrice;
+        const profitLoss = currentValue - position.investedAmount.toNumber();
+
+        // Обновляем позицию в БД
+        return this.prisma.position.update({
+          where: { id: position.id },
+          data: {
+            currentPrice: new Prisma.Decimal(currentPrice),
+            currentValue: new Prisma.Decimal(currentValue),
+            profitLoss: new Prisma.Decimal(profitLoss),
+          },
+          include: { cryptocurrency: true },
+        });
+      }),
+    );
+
+    return updatedPositions;
+  }
+
+  /**
+   * Получение закрытых позиций.
+   */
+  async getClosedPositions(userId: string) {
+    return this.prisma.position.findMany({
+      where: { userId, status: PositionStatus.CLOSED },
+      include: { cryptocurrency: true },
+      orderBy: { closedAt: 'desc' },
+    });
+  }
+
+  /**
+   * Получение всех позиций.
+   */
+  async getAllPositions(userId: string) {
+    return this.prisma.position.findMany({
+      where: { userId },
+      include: { cryptocurrency: true },
+      orderBy: { openedAt: 'desc' },
+    });
   }
 }

@@ -1,132 +1,51 @@
 import { create } from "zustand";
-import { devtools } from "zustand/middleware";
-import {
-  TelegramState,
-  TelegramUser,
-  TelegramWebAppInstance,
-  TelegramInitData,
-} from "./types";
 
-const initialState = {
-  user: null,
-  userId: null,
+interface TelegramUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+}
+
+interface WebApp {
+  initDataUnsafe: {
+    user?: TelegramUser;
+  };
+  expand: () => void;
+}
+
+interface TelegramState {
+  webApp: WebApp | null;
+  user: TelegramUser | null;
+  init: (webAppInstance: WebApp | undefined) => void;
+  expand: () => void;
+}
+
+export const useTelegramStore = create<TelegramState>((set, get) => ({
   webApp: null,
-  initData: null,
-  isLoading: true,
-  isInTelegram: false,
-  isInitialized: false,
-  error: null,
-};
+  user: null,
 
-export const useTelegramStore = create<TelegramState>()(
-  devtools(
-    (set, get) => ({
-      ...initialState,
-
-      // Сеттеры
-      setUser: (user: TelegramUser | null) =>
-        set(
-          (state) => ({
-            ...state,
-            user,
-            userId: user?.id || null,
-          }),
-          false,
-          "setUser"
-        ),
-
-      setWebApp: (webApp: TelegramWebAppInstance | null) =>
-        set(
-          (state) => ({
-            ...state,
-            webApp,
-          }),
-          false,
-          "setWebApp"
-        ),
-
-      setInitData: (initData: TelegramInitData | null) =>
-        set(
-          (state) => ({
-            ...state,
-            initData,
-          }),
-          false,
-          "setInitData"
-        ),
-
-      setLoading: (isLoading: boolean) =>
-        set(
-          (state) => ({
-            ...state,
-            isLoading,
-          }),
-          false,
-          "setLoading"
-        ),
-
-      setError: (error: string | null) =>
-        set(
-          (state) => ({
-            ...state,
-            error,
-          }),
-          false,
-          "setError"
-        ),
-
-      setIsInTelegram: (isInTelegram: boolean) =>
-        set(
-          (state) => ({
-            ...state,
-            isInTelegram,
-          }),
-          false,
-          "setIsInTelegram"
-        ),
-
-      setInitialized: (isInitialized: boolean) =>
-        set(
-          (state) => ({
-            ...state,
-            isInitialized,
-          }),
-          false,
-          "setInitialized"
-        ),
-
-      reset: () => set(() => initialState, false, "reset"),
-
-      // Вычисляемые значения
-      isAuthenticated: () => {
-        const { user, isInTelegram } = get();
-        return !!(user && isInTelegram);
-      },
-
-      getUserDisplayName: () => {
-        const { user } = get();
-        if (!user) return "Неизвестный пользователь";
-
-        const { first_name, last_name, username } = user;
-        if (first_name && last_name) return `${first_name} ${last_name}`;
-        if (first_name) return first_name;
-        if (username) return `@${username}`;
-        return `User ${user.id}`;
-      },
-    }),
-    {
-      name: "telegram-store",
+  init: (webAppInstance) => {
+    if (webAppInstance && webAppInstance.initDataUnsafe?.user) {
+      set({ webApp: webAppInstance, user: webAppInstance.initDataUnsafe.user });
     }
-  )
-);
+  },
 
-// Селекторы для удобства
+  expand: () => {
+    const { webApp } = get();
+    webApp?.expand();
+  },
+}));
+
 export const telegramSelectors = {
-  user: (state: TelegramState) => state.user,
-  userId: (state: TelegramState) => state.userId,
-  isAuthenticated: (state: TelegramState) => state.isAuthenticated(),
-  isLoading: (state: TelegramState) => state.isLoading,
-  error: (state: TelegramState) => state.error,
-  webApp: (state: TelegramState) => state.webApp,
-  displayName: (state: TelegramState) => state.getUserDisplayName(),
+  userId: (state: TelegramState) => state.user?.id,
+  displayName: (state: TelegramState) => {
+    if (!state.user) return "User";
+    return (
+      state.user.first_name +
+      (state.user.last_name ? ` ${state.user.last_name}` : "")
+    );
+  },
+  username: (state: TelegramState) => state.user?.username,
 };

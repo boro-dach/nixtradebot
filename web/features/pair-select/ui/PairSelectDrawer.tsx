@@ -1,3 +1,5 @@
+// Файл: src/features/pair-select/ui/PairSelectDrawer.tsx
+
 "use client";
 import {
   Drawer,
@@ -7,88 +9,67 @@ import {
   DrawerTrigger,
 } from "@/shared/ui/drawer";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { Button } from "@/shared/ui/button";
-import { ChevronDown } from "lucide-react";
-import { ICryptoPair } from "@/entities/pair/model/types";
-import { useState, useEffect } from "react";
-import { PairRow } from "@/entities/pair/ui/PairRow";
-import axios from "axios";
+import { Loader2 } from "lucide-react";
+import {
+  useMarketAssets,
+  MarketAsset,
+} from "@/entities/market/api/useMarketAssets";
+import Image from "next/image";
 
 interface PairSelectDrawerProps {
-  selectedPair: ICryptoPair;
-  onSelectPair: (pair: ICryptoPair) => void;
+  onSelectPair: (asset: MarketAsset) => void;
+  children: React.ReactNode; // Пропс для кнопки-триггера
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export const PairSelectDrawer: React.FC<PairSelectDrawerProps> = ({
-  selectedPair,
   onSelectPair,
+  children,
+  isOpen,
+  onOpenChange,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [pairs, setPairs] = useState<ICryptoPair[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: marketAssets, isLoading } = useMarketAssets();
 
-  useEffect(() => {
-    const fetchPairs = async () => {
-      try {
-        const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-        const response = await axios.get(
-          "https://api.coingecko.com/api/v3/coins/markets",
-          {
-            headers: {
-              "x-cg-demo-api-key": apiKey,
-            },
-            params: {
-              vs_currency: "usd",
-              order: "market_cap_desc",
-              per_page: 50,
-              page: 1,
-            },
-          }
-        );
-
-        const formattedPairs: ICryptoPair[] = response.data.map(
-          (coin: any) => ({
-            name: coin.name,
-            symbol: coin.id,
-          })
-        );
-
-        setPairs(formattedPairs);
-      } catch (error) {
-        console.error("Error fetching pairs:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPairs();
-  }, []);
-
-  const handleSelect = (pair: ICryptoPair) => {
-    onSelectPair(pair);
-    setIsOpen(false);
+  const handleSelect = (asset: MarketAsset) => {
+    onSelectPair(asset);
+    onOpenChange(false); // Закрываем шторку
   };
 
   return (
-    <Drawer open={isOpen} onOpenChange={setIsOpen}>
-      <DrawerTrigger asChild className="mx-4">
-        <Button variant="outline" className="flex flex-row items-center gap-1">
-          <span className="font-bold text-lg">{selectedPair.name}</span>
-          <ChevronDown />
-        </Button>
-      </DrawerTrigger>
+    <Drawer open={isOpen} onOpenChange={onOpenChange}>
+      {/* 1. Используем `children` как триггер */}
+      <DrawerTrigger asChild>{children}</DrawerTrigger>
+
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>Выберите актив</DrawerTitle>
         </DrawerHeader>
         <ScrollArea className="h-72 px-4">
-          {loading ? (
+          {isLoading ? (
             <div className="flex justify-center py-8">
-              <p className="text-muted-foreground">Загрузка...</p>
+              <Loader2 className="animate-spin" />
             </div>
           ) : (
-            pairs.map((pair) => (
-              <PairRow key={pair.symbol} pair={pair} onSelect={handleSelect} />
+            marketAssets?.map((asset) => (
+              <div
+                key={asset.id}
+                onClick={() => handleSelect(asset)}
+                className="flex items-center gap-3 p-2 rounded-md hover:bg-zinc-800 cursor-pointer"
+              >
+                <Image
+                  src={asset.image}
+                  alt={asset.name}
+                  width={32}
+                  height={32}
+                />
+                <div>
+                  <p className="font-semibold">{asset.name}</p>
+                  <p className="text-sm text-zinc-400">
+                    {asset.symbol.toUpperCase()}
+                  </p>
+                </div>
+              </div>
             ))
           )}
         </ScrollArea>

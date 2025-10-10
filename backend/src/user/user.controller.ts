@@ -1,10 +1,33 @@
-import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { ChangeLanguageDto, GetLanguageDto } from './dto/user.dto';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @Get(':tgid')
+  async getUserById(@Param('tgid') tgid: string) {
+    console.log(`--- Received request for user with tgid: ${tgid} ---`);
+
+    const user = await this.userService.findById(tgid);
+
+    console.log(`--- Found user: ${JSON.stringify(user)} ---`);
+
+    if (!user) {
+      throw new NotFoundException(`Пользователь с ID ${tgid} не найден.`);
+    }
+    return user;
+  }
 
   @HttpCode(200)
   @Post('set-language')
@@ -36,5 +59,11 @@ export class UserController {
     const user = await this.userService.verify(body.tgid);
 
     return user;
+  }
+
+  @Post('ban')
+  @HttpCode(200)
+  async banUser(@Body() body: { tgid: string; ban: boolean }) {
+    return this.userService.banUser(body.tgid, body.ban);
   }
 }

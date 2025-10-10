@@ -8,6 +8,7 @@ import { TransactionModule } from './transaction/transaction.module';
 import { CryptocurrencyModule } from './cryptocurrency/cryptocurrency.module';
 import { BalanceModule } from './balance/balance.module';
 import { TradeModule } from './trade/trade.module';
+import { MarketModule } from './market/market.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { TradeModule } from './trade/trade.module';
     BalanceModule,
     CryptocurrencyModule,
     TradeModule,
+    MarketModule,
   ],
   controllers: [AppController],
   providers: [AppService],
