@@ -48,4 +48,5 @@ export const telegramSelectors = {
     );
   },
   username: (state: TelegramState) => state.user?.username,
+  user: (state: TelegramState) => state.user,
 };
