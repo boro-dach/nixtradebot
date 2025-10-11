@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { formatCurrency } from "@/shared/lib/formatters";
-import { PortfolioAsset } from "@/app/portfolio/page";
+import { PortfolioAsset } from "../model/types";
 
 export const AssetRow = ({ asset }: { asset: PortfolioAsset }) => {
   return (
