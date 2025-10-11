@@ -30,11 +30,7 @@ interface Asset {
 const Main = () => {
   const user = useTelegramStore(telegramSelectors.user);
   const userId = useTelegramStore(telegramSelectors.userId);
-  const isLoading = useTelegramStore(telegramSelectors.isLoading);
-  const error = useTelegramStore(telegramSelectors.error);
-  const isAuthenticated = useTelegramStore(telegramSelectors.isAuthenticated);
   const displayName = useTelegramStore(telegramSelectors.displayName);
-  const webApp = useTelegramStore(telegramSelectors.webApp);
 
   const [isStarred, setIsStarred] = useState<boolean>(false);
   const [assets, setAssets] = useState<Asset[]>([]);
