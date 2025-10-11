@@ -1,4 +1,5 @@
-"use client";
+"use-client";
+
 import { useTelegramStore, telegramSelectors } from "@/entities/telegram";
 import { useUser } from "@/entities/user/api/useUser";
 import { Loader2 } from "lucide-react";
@@ -33,73 +34,47 @@ const LoadingScreen = () => (
 );
 
 export const Gatekeeper = ({ children }: { children: React.ReactNode }) => {
-  const [isInitialized, setIsInitialized] = useState(false);
   const { init, expand } = useTelegramStore();
+  const telegramUserId = useTelegramStore(telegramSelectors.userId);
 
-  const userId = useTelegramStore(telegramSelectors.userId);
-
-  const { data: user, isLoading, error } = useUser(userId?.toString() || "");
+  // Флаг, который показывает, что TWA точно инициализировался
+  const [isTwaReady, setIsTwaReady] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const tg = window.Telegram?.WebApp;
-
       if (tg) {
-        console.log("✅ Telegram WebApp found, initializing...");
         init(tg);
+        tg.ready();
         expand();
-      } else {
-        console.log("⚠️ No Telegram WebApp - running in development mode");
       }
-
-      setIsInitialized(true);
     }
   }, [init, expand]);
 
-  useEffect(() => {
-    console.log("🔍 Gatekeeper State:", {
-      isInitialized,
-      userId,
-      isLoading,
-      hasError: !!error,
-      errorMessage: error?.message,
-      hasUser: !!user,
-      userBanned: user?.isBannedInBot,
-    });
-  }, [isInitialized, userId, isLoading, error, user]);
+  const userId =
+    process.env.NODE_ENV === "development"
+      ? telegramUserId || 843961428
+      : telegramUserId;
 
-  if (!isInitialized) {
+  const { data: user, isLoading, error } = useUser(userId);
+
+  // --- ЛОГИКА ОТОБРАЖЕНИЯ ---
+
+  // Показываем лоадер, пока TWA не готов ИЛИ (если TWA готов, но) нет userId
+  if (!isTwaReady || !userId) {
     return <LoadingScreen />;
   }
 
-  if (!userId) {
-    return (
-      <ErrorScreen message="Не удалось получить ID пользователя. Откройте приложение через Telegram." />
-    );
-  }
-
+  // Показываем лоадер, пока грузятся данные с нашего бэкенда
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   if (error) {
-    console.error("User fetch error:", error);
-    return (
-      <ErrorScreen
-        message={`Не удалось загрузить данные пользователя. ${
-          error instanceof Error ? error.message : ""
-        }`}
-      />
-    );
+    return <ErrorScreen message="Не удалось загрузить данные пользователя." />;
   }
 
-  if (!user) {
-    return (
-      <ErrorScreen message="Пользователь не найден. Обратитесь в поддержку." />
-    );
-  }
-
-  if (user.isBannedInBot) {
+  if (user && user.isBannedInBot) {
     return <BannedScreen />;
   }
 

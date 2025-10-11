@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
-// 1. Импортируем все необходимые провайдеры
 import { ThemeProvider } from "@/shared/providers/theme-provider";
 import { TanstackQueryProvider } from "@/shared/providers/tanstack-query-provider";
 import { Gatekeeper } from "./gatekeeper";
