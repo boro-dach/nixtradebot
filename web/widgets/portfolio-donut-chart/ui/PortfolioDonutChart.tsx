@@ -4,7 +4,7 @@
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { formatCurrency, formatPercentage } from "@/shared/lib/formatters";
-import { PortfolioAsset } from "@/app/portfolio/page";
+import { PortfolioAsset } from "@/entities/asset/model/types";
 
 // Определяем цвета (можно вынести в константы)
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AF19FF"];
