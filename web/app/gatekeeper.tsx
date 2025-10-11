@@ -36,8 +36,7 @@ export const Gatekeeper = ({ children }: { children: React.ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const { init, expand } = useTelegramStore();
 
-  //   const userId = useTelegramStore(telegramSelectors.userId);
-  const userId = "843961428";
+  const userId = useTelegramStore(telegramSelectors.userId);
 
   const { data: user, isLoading, error } = useUser(userId?.toString() || "");
 
