@@ -36,6 +36,7 @@ export const Gatekeeper = ({ children }: { children: React.ReactNode }) => {
   const { init, expand } = useTelegramStore();
   const telegramUserId = useTelegramStore(telegramSelectors.userId);
   const [isTwaReady, setIsTwaReady] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -44,10 +45,8 @@ export const Gatekeeper = ({ children }: { children: React.ReactNode }) => {
         init(tg);
         tg.ready();
         expand();
-        setIsTwaReady(true); // ← Устанавливаем флаг готовности
+        setIsTwaReady(true);
       } else {
-        // Если TWA недоступен, всё равно помечаем как готовый
-        // (чтобы не зависнуть в dev-режиме)
         setIsTwaReady(true);
       }
     }
@@ -60,6 +59,19 @@ export const Gatekeeper = ({ children }: { children: React.ReactNode }) => {
 
   const { data: user, isLoading, error } = useUser(userId);
 
+  // Таймаут на случай если бэкенд не отвечает
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 10000); // 10 секунд
+
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [isLoading]);
+
   // Показываем лоадер, пока TWA не готов
   if (!isTwaReady) {
     return <LoadingScreen />;
@@ -70,13 +82,22 @@ export const Gatekeeper = ({ children }: { children: React.ReactNode }) => {
     return <LoadingScreen />;
   }
 
+  // Если превышен таймаут загрузки
+  if (loadingTimeout) {
+    return (
+      <ErrorScreen message="Сервер не отвечает. Проверьте подключение к интернету или попробуйте позже." />
+    );
+  }
+
   // Показываем лоадер, пока грузятся данные с бэкенда
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   if (error) {
-    return <ErrorScreen message="Не удалось загрузить данные пользователя." />;
+    return (
+      <ErrorScreen message="Не удалось загрузить данные пользователя. Возможно, сервер недоступен." />
+    );
   }
 
   if (user?.isBannedInBot) {
