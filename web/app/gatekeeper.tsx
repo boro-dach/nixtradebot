@@ -1,5 +1,4 @@
-"use-client";
-
+"use client";
 import { useTelegramStore, telegramSelectors } from "@/entities/telegram";
 import { useUser } from "@/entities/user/api/useUser";
 import { Loader2 } from "lucide-react";
@@ -36,8 +35,6 @@ const LoadingScreen = () => (
 export const Gatekeeper = ({ children }: { children: React.ReactNode }) => {
   const { init, expand } = useTelegramStore();
   const telegramUserId = useTelegramStore(telegramSelectors.userId);
-
-  // Флаг, который показывает, что TWA точно инициализировался
   const [isTwaReady, setIsTwaReady] = useState(false);
 
   useEffect(() => {
@@ -47,6 +44,11 @@ export const Gatekeeper = ({ children }: { children: React.ReactNode }) => {
         init(tg);
         tg.ready();
         expand();
+        setIsTwaReady(true); // ← Устанавливаем флаг готовности
+      } else {
+        // Если TWA недоступен, всё равно помечаем как готовый
+        // (чтобы не зависнуть в dev-режиме)
+        setIsTwaReady(true);
       }
     }
   }, [init, expand]);
@@ -58,14 +60,17 @@ export const Gatekeeper = ({ children }: { children: React.ReactNode }) => {
 
   const { data: user, isLoading, error } = useUser(userId);
 
-  // --- ЛОГИКА ОТОБРАЖЕНИЯ ---
-
-  // Показываем лоадер, пока TWA не готов ИЛИ (если TWA готов, но) нет userId
-  if (!isTwaReady || !userId) {
+  // Показываем лоадер, пока TWA не готов
+  if (!isTwaReady) {
     return <LoadingScreen />;
   }
 
-  // Показываем лоадер, пока грузятся данные с нашего бэкенда
+  // Показываем лоадер, если нет userId (в production)
+  if (!userId && process.env.NODE_ENV !== "development") {
+    return <LoadingScreen />;
+  }
+
+  // Показываем лоадер, пока грузятся данные с бэкенда
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -74,7 +79,7 @@ export const Gatekeeper = ({ children }: { children: React.ReactNode }) => {
     return <ErrorScreen message="Не удалось загрузить данные пользователя." />;
   }
 
-  if (user && user.isBannedInBot) {
+  if (user?.isBannedInBot) {
     return <BannedScreen />;
   }
 
