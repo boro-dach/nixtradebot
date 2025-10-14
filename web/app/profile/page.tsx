@@ -1,17 +1,14 @@
 // Файл: Profile.tsx
-
 "use client";
-
 import {
   telegramSelectors,
   useTelegramStore,
 } from "@/entities/telegram/model/store";
 import SettingsList from "@/widgets/settings-list/ui/SettingsList";
-import { ArrowDown, ArrowRightLeft, ArrowUp, Loader2 } from "lucide-react"; // 1. Импортируем иконку лоадера
+import { ArrowDown, ArrowRightLeft, ArrowUp, Loader2 } from "lucide-react";
 import Link from "next/link";
-import React, { useMemo } from "react"; // 2. Импортируем useMemo
+import React, { useMemo } from "react";
 
-// 3. Импортируем наши хуки и типы
 import {
   useBalance,
   AssetBalance,
@@ -20,7 +17,9 @@ import { useAssetPrices } from "@/entities/market/api/useAssetPrices";
 
 const Profile = () => {
   const displayName = useTelegramStore(telegramSelectors.displayName);
+  const user = useTelegramStore(telegramSelectors.user);
   const userId = 843961428;
+
   const { balance, isLoading: isLoadingBalance } = useBalance(userId);
 
   const assetIdsToFetch = useMemo(() => {
@@ -30,10 +29,8 @@ const Profile = () => {
     );
   }, [balance]);
 
-  // 6. Запрашиваем цены для этих ID с CoinGecko
   const { prices, isLoadingPrices } = useAssetPrices(assetIdsToFetch);
 
-  // 7. Считаем итоговую сумму
   const totalBalanceValue = useMemo(() => {
     if (!balance || !prices || prices.size === 0) {
       return 0;
@@ -45,31 +42,54 @@ const Profile = () => {
     }, 0);
   }, [balance, prices]);
 
-  // 8. Определяем общий статус загрузки
   const isLoading = isLoadingBalance || isLoadingPrices;
 
-  // --- КОНЕЦ ЛОГИКИ БАЛАНСА ---
+  // Функция для получения инициалов
+  const getInitials = () => {
+    if (!user) return "U";
+    const firstInitial = user.first_name?.[0] || "";
+    const lastInitial = user.last_name?.[0] || "";
+    return (firstInitial + lastInitial).toUpperCase() || "U";
+  };
+
+  // Генерация цвета на основе userId
+  const getAvatarColor = () => {
+    if (!user?.id) return "bg-zinc-700";
+    const colors = [
+      "bg-red-500",
+      "bg-blue-500",
+      "bg-green-500",
+      "bg-yellow-500",
+      "bg-purple-500",
+      "bg-pink-500",
+      "bg-indigo-500",
+      "bg-teal-500",
+    ];
+    return colors[user.id % colors.length];
+  };
 
   return (
     <div className="flex flex-col mx-4 gap-4 pb-20">
       <div className="flex flex-row justify-between items-center mt-4">
         <p className="text-lg font-semibold">Profile</p>
       </div>
+
       <div className="flex flex-col items-center gap-2 w-full mt-4">
-        <div className="bg-zinc-900 p-12 rounded-full"></div>
-        <p>{displayName}</p>
+        {/* Аватарка с инициалами */}
+        <div
+          className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-3xl font-bold ${getAvatarColor()}`}
+        >
+          {getInitials()}
+        </div>
+        <p className="font-medium">{displayName}</p>
       </div>
+
       <div className="flex flex-col gap-2 mt-4">
         <p className="font-semibold text-2xl">Total balance:</p>
-
-        {/* 9. Отображаем баланс или лоадер */}
         <div className="text-4xl h-12 flex items-center">
-          {" "}
-          {/* Обертка для стабильной высоты */}
           {isLoading ? (
             <Loader2 className="w-9 h-9 animate-spin" />
           ) : (
-            // Форматируем сумму для отображения
             `$${totalBalanceValue.toLocaleString("en-US", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -77,6 +97,7 @@ const Profile = () => {
           )}
         </div>
       </div>
+
       <div className="grid grid-cols-3 grid-rows-1 gap-2 h-28">
         <Link
           href={"/deposit"}
@@ -106,6 +127,7 @@ const Profile = () => {
           <p>Withdraw</p>
         </Link>
       </div>
+
       <div className="mt-8">
         <SettingsList />
       </div>

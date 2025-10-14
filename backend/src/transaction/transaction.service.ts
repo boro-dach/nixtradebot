@@ -17,7 +17,7 @@ import { HttpService } from '@nestjs/axios';
 export class TransactionService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly httpService: HttpService, // Убедитесь, что HttpModule импортирован в transaction.module.ts
+    private readonly httpService: HttpService,
   ) {}
 
   async create(dto: CreateTransactionDto) {
@@ -129,7 +129,10 @@ export class TransactionService {
 
   async accept(id: string) {
     return this.prisma.$transaction(async (tx) => {
-      const transaction = await tx.transaction.findUnique({ where: { id } });
+      const transaction = await tx.transaction.findUnique({
+        where: { id },
+        include: { user: { include: { referredBy: true } } },
+      });
       if (!transaction)
         throw new NotFoundException(`Транзакция с ID ${id} не найдена.`);
       if (transaction.status !== Status.PROCESSING) {
@@ -138,13 +141,53 @@ export class TransactionService {
         );
       }
 
+      if (
+        transaction.type === TransactionType.DEPOSIT &&
+        transaction.user.referredById
+      ) {
+        const referrerId = transaction.user.referredById;
+        const bonusAmount = transaction.amount.mul(0.1); // 10%
+
+        const usdtCurrency = await tx.cryptocurrency.findUnique({
+          where: { coingeckoId: 'tether' },
+        });
+        if (!usdtCurrency) {
+          console.error(
+            'CRITICAL: USDT currency not found, cannot apply referral bonus.',
+          );
+        } else {
+          await tx.assetBalance.upsert({
+            where: {
+              userId_cryptocurrencyId: {
+                userId: referrerId,
+                cryptocurrencyId: usdtCurrency.id,
+              },
+            },
+            update: { amount: { increment: bonusAmount } },
+            create: {
+              userId: referrerId,
+              cryptocurrencyId: usdtCurrency.id,
+              amount: bonusAmount,
+            },
+          });
+          await tx.transaction.create({
+            data: {
+              user_id: referrerId,
+              type: TransactionType.DEPOSIT,
+              cryptocurrencyId: usdtCurrency.id,
+              amount: bonusAmount,
+              status: Status.CONFIRMED,
+            },
+          });
+        }
+      }
+
       const whereBalance = {
         userId_cryptocurrencyId: {
           userId: transaction.user_id,
           cryptocurrencyId: transaction.cryptocurrencyId,
         },
       };
-
       if (transaction.type === TransactionType.DEPOSIT) {
         await tx.assetBalance.upsert({
           where: whereBalance,
@@ -156,7 +199,6 @@ export class TransactionService {
           },
         });
       }
-
       if (transaction.type === TransactionType.WITHDRAW) {
         const currentBalance = await tx.assetBalance.findUnique({
           where: whereBalance,

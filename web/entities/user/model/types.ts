@@ -12,4 +12,7 @@ export interface User {
   stopLimit: number;
   hasStopLimit: boolean;
   assetBalances?: AssetBalance[];
+
+  referralCode: string;
+  referredById: string | null;
 }

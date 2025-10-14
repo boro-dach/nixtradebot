@@ -1,5 +1,5 @@
 import { Language } from '@prisma/client';
-import { IsEnum, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateDto {
   @IsString()
@@ -17,4 +17,14 @@ export class ChangeLanguageDto {
 export class GetLanguageDto {
   @IsString()
   tgid: string;
+}
+
+export class ApplyReferralCodeDto {
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  referralCode: string;
 }

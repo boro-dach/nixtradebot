@@ -44,22 +44,11 @@ export class MarketController {
     return this.marketService.getStablecoinStats();
   }
 
-  // ===== ADMIN ENDPOINTS - Добавить защиту через Guards! =====
-
-  /**
-   * Синхронизировать топ-100 криптовалют с БД
-   * POST /market/admin/sync
-   */
-  // @UseGuards(AdminGuard)
   @Post('admin/sync')
   syncCryptocurrencies() {
     return this.marketService.syncCryptocurrencies();
   }
 
-  /**
-   * Получить список криптовалют из БД
-   * GET /market/cryptocurrencies?page=1&limit=100
-   */
   @Get('cryptocurrencies')
   getCryptocurrenciesFromDB(
     @Query('page') page: string = '1',
@@ -71,12 +60,6 @@ export class MarketController {
     );
   }
 
-  /**
-   * Установить манипуляцию цены (только для админов)
-   * POST /market/admin/manipulate
-   * Body: { assetId: "bitcoin", multiplier: 1.5 }
-   */
-  // @UseGuards(AdminGuard)
   @Post('admin/manipulate')
   setPriceManipulation(
     @Body('assetId') assetId: string,
@@ -85,11 +68,6 @@ export class MarketController {
     return this.marketService.setPriceManipulation(assetId, multiplier);
   }
 
-  /**
-   * Удалить манипуляцию цены
-   * DELETE /market/admin/manipulate/:assetId
-   */
-  // @UseGuards(AdminGuard)
   @Delete('admin/manipulate/:assetId')
   removePriceManipulation(@Param('assetId') assetId: string) {
     return this.marketService.removePriceManipulation(assetId);

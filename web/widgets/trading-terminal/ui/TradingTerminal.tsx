@@ -11,20 +11,30 @@ import {
   MarketAsset,
 } from "@/entities/market/api/useMarketAssets";
 import { useOpenPosition } from "@/features/trade/api/useOpenPosition";
+import { useOpenPositions } from "@/features/trade/api/useOpenPositions";
+import { useClosePosition } from "@/features/trade/api/useClosePosition";
 import { PairSelectDrawer } from "@/features/pair-select/ui/PairSelectDrawer";
 import TimeframeSelect from "@/features/timeframe-select/ui/TimeframeSelect";
-import { TradingChart } from "./TradingChart"; // Убедитесь, что этот путь правильный
+import { TradingChart } from "./TradingChart";
+import { OpenPositionCard } from "@/entities/trade/ui/OpenPositionCard";
 
 export const TradingTerminal = ({ userId }: { userId: string }) => {
   const { data: marketAssets, isLoading: isLoadingAssets } = useMarketAssets();
   const { mutate: openPosition, isPending: isOpeningPosition } =
     useOpenPosition();
+  const { data: openPositions, isLoading: isLoadingPositions } =
+    useOpenPositions(userId);
+  const { mutate: closePosition, isPending: isClosingPosition } =
+    useClosePosition();
 
   // Состояния UI
   const [selectedAsset, setSelectedAsset] = useState<MarketAsset | null>(null);
   const [amount, setAmount] = useState<string>("");
   const [currentTimeframe, setCurrentTimeframe] = useState("7");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [closingPositionId, setClosingPositionId] = useState<string | null>(
+    null
+  );
 
   // Установка актива по умолчанию (Bitcoin)
   useEffect(() => {
@@ -49,6 +59,18 @@ export const TradingTerminal = ({ userId }: { userId: string }) => {
       amount: tradeAmount,
       type: direction,
     });
+  };
+
+  const handleClosePosition = (positionId: string) => {
+    setClosingPositionId(positionId);
+    closePosition(
+      { positionId, userId },
+      {
+        onSettled: () => {
+          setClosingPositionId(null);
+        },
+      }
+    );
   };
 
   // Получаем данные напрямую из `selectedAsset`
@@ -114,13 +136,32 @@ export const TradingTerminal = ({ userId }: { userId: string }) => {
         </div>
       </div>
 
-      {/* --- ВОССТАНОВЛЕННЫЙ БЛОК --- */}
+      {/* Открытые позиции */}
+      {!isLoadingPositions && openPositions && openPositions.length > 0 && (
+        <div className="px-4 my-4">
+          <h3 className="font-semibold text-lg mb-3">Open Positions</h3>
+          <div className="flex flex-col gap-3">
+            {openPositions.map((position) => (
+              <OpenPositionCard
+                key={position.id}
+                position={position}
+                onClose={handleClosePosition}
+                isClosing={
+                  isClosingPosition && closingPositionId === position.id
+                }
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-2 px-4 my-4">
         <TimeframeSelect onTimescaleChange={setCurrentTimeframe} />
       </div>
 
       <TradingChart assetId={selectedAsset.id} days={currentTimeframe} />
 
+      {/* Форма открытия позиции */}
       <div className="p-4 flex flex-col gap-4 items-center">
         <Input
           type="number"
@@ -155,7 +196,6 @@ export const TradingTerminal = ({ userId }: { userId: string }) => {
           </Button>
         </div>
       </div>
-      {/* --- КОНЕЦ ВОССТАНОВЛЕННОГО БЛОКА --- */}
     </div>
   );
 };

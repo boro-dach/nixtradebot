@@ -24,6 +24,12 @@ model User {
   stopLimit         Int             @default(0)
   hasStopLimit      Boolean         @default(false)
   
+  referralCode      String          @unique @default(cuid()) 
+  referredById      String?         
+  
+  referredBy        User?           @relation("Referrals", fields: [referredById], references: [tgid])
+  referrals         User[]          @relation("Referrals") 
+  
   trades            Trade[]
   assetBalances     AssetBalance[]
   transactions      Transaction[]
@@ -32,16 +38,8 @@ model User {
 
 model Admin {
   id String @id @default(cuid())
-
   login String
   password String
-}
-
-enum TransactionCurrency {
-  TON
-  USDT
-  BTC
-  ETH
 }
 
 enum Status {
@@ -57,10 +55,8 @@ enum TransactionType {
 
 model Transaction {
   id String @id @default(cuid())
-
   user_id String
   user User @relation(fields: [user_id], references: [tgid])
-
   type TransactionType
   cryptocurrencyId Int
   currency         Cryptocurrency @relation(fields: [cryptocurrencyId], references: [id])
@@ -70,48 +66,38 @@ model Transaction {
 
 model Cryptocurrency {
   id          Int     @id @default(autoincrement())
-  coingeckoId String  @unique // лучше сделать обязательным
+  coingeckoId String  @unique
   symbol      String  @unique
   name        String
   imageUrl    String?
-
   assetBalances AssetBalance[]
   transactions  Transaction[]
   positions     Position[]
-
   fromTrades Trade[] @relation("fromTrades")
   toTrades   Trade[] @relation("toTrades")
 }
 
-
 model AssetBalance {
   id               String @id @default(cuid())
   amount           Decimal @default(0)
-  
   userId           String
   user             User   @relation(fields: [userId], references: [tgid])
-  
   cryptocurrencyId Int
   cryptocurrency   Cryptocurrency @relation(fields: [cryptocurrencyId], references: [id])
-
   @@unique([userId, cryptocurrencyId])
 }
 
 model Trade {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-
   userId    String
   user      User   @relation(fields: [userId], references: [tgid])
-
   fromCryptocurrencyId Int
   fromCryptocurrency   Cryptocurrency @relation("fromTrades", fields: [fromCryptocurrencyId], references: [id])
   fromAmount           Decimal
-
   toCryptocurrencyId Int
   toCryptocurrency   Cryptocurrency @relation("toTrades", fields: [toCryptocurrencyId], references: [id])
   toAmount           Decimal
-
   executedPrice Decimal
 }
 
@@ -122,7 +108,6 @@ model PriceManipulation {
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
   @@index([assetId, isActive])
 }
 
@@ -140,24 +125,18 @@ model Position {
   id                String         @id @default(cuid())
   userId            String
   user              User           @relation(fields: [userId], references: [tgid])
-  
   cryptocurrencyId  Int
   cryptocurrency    Cryptocurrency @relation(fields: [cryptocurrencyId], references: [id])
-  
   type              PositionType
   status            PositionStatus @default(OPEN)
-  
   entryPrice        Decimal
   amount            Decimal
   investedAmount    Decimal
-  
   currentPrice      Decimal?
   currentValue      Decimal?
   profitLoss        Decimal?
-  
   openedAt          DateTime       @default(now())
   closedAt          DateTime?
-  
   @@index([userId, status])
   @@index([status])
 }

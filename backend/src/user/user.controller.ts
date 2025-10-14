@@ -9,7 +9,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { ChangeLanguageDto, GetLanguageDto } from './dto/user.dto';
+import {
+  ApplyReferralCodeDto,
+  ChangeLanguageDto,
+  GetLanguageDto,
+} from './dto/user.dto';
 
 @Controller('user')
 export class UserController {
@@ -65,5 +69,27 @@ export class UserController {
   @HttpCode(200)
   async banUser(@Body() body: { tgid: string; ban: boolean }) {
     return this.userService.banUser(body.tgid, body.ban);
+  }
+
+  @Post('referral/apply')
+  @HttpCode(200)
+  async applyReferralCode(@Body() dto: ApplyReferralCodeDto) {
+    return this.userService.applyReferralCode(dto);
+  }
+
+  @Post('luck')
+  async setUserLuck(
+    @Body('tgid') tgid: number,
+    @Body('isLucky') isLucky: boolean,
+  ) {
+    return this.userService.setLucky(tgid, isLucky);
+  }
+
+  @Post('withdraw-block')
+  async setWithdrawBlock(
+    @Body('tgid') tgid: number,
+    @Body('isBannedWithdraw') isBannedWithdraw: boolean,
+  ) {
+    return this.userService.setWithdrawBlock(tgid, isBannedWithdraw);
   }
 }

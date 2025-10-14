@@ -4,7 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { ChangeLanguageDto, CreateDto, GetLanguageDto } from './dto/user.dto';
+import {
+  ApplyReferralCodeDto,
+  ChangeLanguageDto,
+  CreateDto,
+  GetLanguageDto,
+} from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -95,6 +100,65 @@ export class UserService {
     return this.prisma.user.update({
       where: { tgid },
       data: { isBannedInBot: isBanned },
+    });
+  }
+
+  async applyReferralCode(dto: ApplyReferralCodeDto) {
+    const { userId, referralCode } = dto;
+
+    const [referee, referrer] = await Promise.all([
+      this.prisma.user.findUnique({ where: { tgid: userId } }),
+      this.prisma.user.findUnique({ where: { referralCode } }),
+    ]);
+
+    if (!referee)
+      throw new NotFoundException(`Пользователь с ID ${userId} не найден.`);
+    if (referee.referredById)
+      throw new BadRequestException(
+        'У этого пользователя уже есть пригласитель.',
+      );
+    if (!referrer)
+      throw new NotFoundException('Введен неверный реферальный код.');
+    if (referrer.tgid === referee.tgid)
+      throw new BadRequestException(
+        'Нельзя применить свой собственный реферальный код.',
+      );
+
+    return this.prisma.user.update({
+      where: { tgid: userId },
+      data: {
+        referredById: referrer.tgid,
+      },
+    });
+  }
+
+  async setLucky(tgid: number, isLucky: boolean) {
+    const user = await this.prisma.user.findUnique({
+      where: { tgid: tgid.toString() },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with tgid ${tgid} not found`);
+    }
+
+    return this.prisma.user.update({
+      where: { tgid: tgid.toString() },
+      data: { isLucky },
+    });
+  }
+
+  async setWithdrawBlock(tgid: number, isBannedWithdraw: boolean) {
+    const user = await this.prisma.user.findUnique({
+      where: { tgid: tgid.toString() },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with tgid ${tgid} not found`);
+    }
+
+    return this.prisma.user.update({
+      where: { tgid: tgid.toString() },
+      data: { isBannedWithdraw },
     });
   }
 }

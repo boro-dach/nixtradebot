@@ -1,5 +1,3 @@
-// Файл: src/app/withdraw/page.tsx
-
 "use client";
 
 import { Button } from "@/shared/ui/button";
@@ -10,12 +8,13 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 import { Input } from "@/shared/ui/input";
-import { ChevronDown, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Card, CardContent } from "@/shared/ui/card";
+import { ChevronDown, Loader2, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCreateTransaction } from "@/features/transaction/api/useCreateTransaction";
+import { useUser } from "@/entities/user/api/useUser";
 
-// 1. ИСПОЛЬЗУЕМ ТОТ ЖЕ СПИСОК МЕТОДОВ, ЧТО И В DEPOSIT
 const withdrawalMethods = {
   ethereum: "Ethereum",
   tether: "Tether TRC20",
@@ -24,13 +23,12 @@ const withdrawalMethods = {
   SBP: "SBP (RUB)",
 };
 
-// 2. ИСПОЛЬЗУЕМ ТОТ ЖЕ МАППИНГ, ЧТО И В DEPOSIT
 const methodToCoingeckoId: Record<string, string> = {
   ethereum: "ethereum",
   tether: "tether",
   bitcoin: "bitcoin",
   toncoin: "the-open-network",
-  SBP: "rub-sbp", // Условный ID для SBP
+  SBP: "rub-sbp",
 };
 
 const Withdraw = () => {
@@ -39,23 +37,35 @@ const Withdraw = () => {
   const [walletAddress, setWalletAddress] = useState<string>("");
   const router = useRouter();
 
+  const userId = "843961428";
+
+  const { data: userInfo, isLoading: isLoadingUser } = useUser(userId);
+
   const { mutate, isPending } = useCreateTransaction({
     onSuccess: () => {
       router.push("/gratulation");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Failed to create withdrawal request:", error);
-      alert("Ошибка при создании заявки на вывод.");
+      const errorMessage =
+        error.response?.data?.message || "Ошибка при создании заявки на вывод.";
+      alert(errorMessage);
     },
   });
 
   const handleCreateWithdrawal = () => {
-    // 3. СКРЫВАЕМ ПОЛЕ АДРЕСА ДЛЯ SBP, ЕСЛИ НУЖНО
-    // Если для SBP адрес не требуется, добавляем проверку
+    if (userInfo?.isBannedWithdraw) {
+      alert(
+        "Вывод средств заблокирован администратором. Обратитесь в поддержку."
+      );
+      return;
+    }
+
     if (!method || !value || (method !== "SBP" && !walletAddress)) {
       alert("Пожалуйста, заполните все поля.");
       return;
     }
+
     const amount = parseFloat(value);
     if (isNaN(amount) || amount <= 0) {
       alert("Пожалуйста, введите корректную сумму.");
@@ -63,24 +73,53 @@ const Withdraw = () => {
     }
 
     mutate({
-      user_id: "843961428",
+      user_id: userId,
       type: "WITHDRAW",
       coingeckoId: methodToCoingeckoId[method],
       amount: amount,
-      // Примечание: адрес кошелька нужно будет добавить в DTO на бэкенде
     });
   };
 
-  return (
-    <div className="flex flex-col gap-4 p-4">
-      <p className="font-semibold text-lg mb-4">Withdraw</p>
+  if (isLoadingUser) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <Loader2 className="w-12 h-12 animate-spin" />
+      </div>
+    );
+  }
 
-      {/* Выпадающий список теперь содержит все методы */}
+  if (userInfo?.isBannedWithdraw) {
+    return (
+      <div className="flex flex-col gap-4 p-4">
+        <p className="font-semibold text-lg mb-4">Withdraw</p>
+        <Card className="border-red-500">
+          <CardContent className="p-6 text-center">
+            <Lock className="w-16 h-16 mx-auto mb-4 text-red-500" />
+            <h3 className="text-xl font-bold mb-2 text-red-500">
+              Вывод заблокирован
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Вывод средств временно ограничен для вашего аккаунта.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Для получения дополнительной информации обратитесь в службу
+              поддержки.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 p-4 max-w-2xl mx-auto">
+      <p className="font-semibold text-lg">Withdraw</p>
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant={"outline"} className="flex justify-between w-full">
             {method ? withdrawalMethods[method] : "Select method"}
-            <ChevronDown />
+            <ChevronDown className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-full" align="start">
@@ -95,8 +134,6 @@ const Withdraw = () => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* 4. ПОЛЕ АДРЕСА ОТОБРАЖАЕТСЯ УСЛОВНО */}
-      {/* Оно не будет показано, если выбран SBP */}
       {method && method !== "SBP" && (
         <Input
           className="text-sm"
@@ -106,17 +143,15 @@ const Withdraw = () => {
         />
       )}
 
-      {/* Для SBP может понадобиться другое поле, например, номер телефона/карты */}
       {method && method === "SBP" && (
         <Input
           className="text-sm"
           placeholder="Номер телефона или карты (для SBP)"
-          value={walletAddress} // Можно использовать тот же стейт или создать новый
+          value={walletAddress}
           onChange={(e) => setWalletAddress(e.target.value)}
         />
       )}
 
-      {/* Поле для ввода суммы */}
       <Input
         type="number"
         className="text-sm"
@@ -125,7 +160,6 @@ const Withdraw = () => {
         onChange={(e) => setValue(e.target.value)}
       />
 
-      {/* Кнопка для создания заявки */}
       <Button
         className="w-full mt-4"
         onClick={handleCreateWithdrawal}
