@@ -173,9 +173,6 @@ const Main = () => {
                 className={isStarred ? "fill-yellow-400 text-yellow-400" : ""}
               />
             </Button>
-            <Button variant={"secondary"} className="w-8 h-8 cursor-pointer">
-              <Share2 />
-            </Button>
           </div>
         </div>
 
