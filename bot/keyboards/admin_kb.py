@@ -5,7 +5,6 @@ def get_admin_panel_keyboard():
     builder = InlineKeyboardBuilder()
 
     builder.row(InlineKeyboardButton(text="💬 Диалог", callback_data="admin_dialog"))
-    builder.row(InlineKeyboardButton(text="📋 История логов", callback_data="admin_logs"))
     
     builder.row(InlineKeyboardButton(text="Уведомления о действиях: 🟢", callback_data="admin_toggle_notifications"))
     

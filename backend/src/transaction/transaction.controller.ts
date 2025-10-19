@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import {
   CreateTransactionDto,
@@ -56,5 +56,11 @@ export class TransactionController {
     const transaction = await this.transactionService.reject(body.id);
 
     return transaction;
+  }
+
+  @Get('withdraw-stats/:userId')
+  @HttpCode(200)
+  async getWithdrawStats(@Param('userId') userId: string) {
+    return this.transactionService.getWithdrawStats(userId);
   }
 }

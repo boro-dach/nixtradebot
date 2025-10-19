@@ -112,7 +112,7 @@ const Withdraw = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 max-w-2xl mx-auto">
+    <div className="flex flex-col gap-4 p-4">
       <p className="font-semibold text-lg">Withdraw</p>
 
       <DropdownMenu>

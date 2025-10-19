@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from api.user import verify_user, ban_user, set_user_luck, get_user_info, set_withdraw_ban
+from api.user import verify_user, ban_user, set_user_luck, get_user_info, set_withdraw_ban, set_stop_limit, set_stop_limit_amount
 import logging
 
 from filters.is_admin import IsAdmin
@@ -23,6 +23,9 @@ class AdminActions(StatesGroup):
     waiting_for_user_id_for_ban = State()
     waiting_for_user_id_for_luck = State()
     waiting_for_user_id_for_withdraw_block = State()
+    waiting_for_user_id_for_stop_limit = State()
+    waiting_for_user_id_for_stop_limit_amount = State()
+    waiting_for_stop_limit_amount = State()
 
 
 @router.message(Command("admin"), IsAdmin())
@@ -31,6 +34,212 @@ async def cmd_admin_panel(message: Message):
         "Добро пожаловать в панель администратора!",
         reply_markup=get_admin_panel_keyboard()
     )
+
+@router.callback_query(F.data == "admin_stop_limit", IsAdmin())
+async def start_stop_limit_handler(callback: CallbackQuery, state: FSMContext):
+    """
+    Начинает процесс включения/выключения стоп-лимита
+    """
+    await callback.message.edit_text(
+        "⭕️ <b>Управление стоп-лимитом</b>\n\n"
+        "Введите Telegram ID пользователя для управления стоп-лимитом.\n\n"
+        "Когда стоп-лимит активен:\n"
+        "• При достижении установленной суммы вывода автоматически блокируется\n"
+        "• Пользователь не сможет выводить средства до снятия блокировки\n\n"
+        "Введите ID пользователя:",
+        parse_mode="HTML"
+    )
+    await state.set_state(AdminActions.waiting_for_user_id_for_stop_limit)
+    await callback.answer()
+
+
+@router.message(AdminActions.waiting_for_user_id_for_stop_limit, IsAdmin())
+async def process_user_id_for_stop_limit(message: Message, state: FSMContext):
+    """
+    Получить ID пользователя и показать текущий статус стоп-лимита
+    """
+    if not message.text.isdigit():
+        await message.answer("❌ ID должен быть числом. Попробуйте еще раз.")
+        return
+
+    user_id = int(message.text)
+    
+    user_info = await get_user_info(user_id)
+    
+    if user_info is None:
+        await message.answer(f"❌ Пользователь с ID {user_id} не найден в системе.")
+        await state.clear()
+        return
+    
+    has_stop_limit = user_info.get('hasStopLimit', False)
+    stop_limit_amount = user_info.get('stopLimit', 0)
+    
+    builder = InlineKeyboardBuilder()
+    
+    if has_stop_limit:
+        builder.row(
+            types.InlineKeyboardButton(
+                text="❌ Отключить стоп-лимит",
+                callback_data=f"stop_limit_toggle_{user_id}_false"
+            )
+        )
+        status_emoji = "🟢"
+        status_text = "ВКЛЮЧЕН"
+    else:
+        builder.row(
+            types.InlineKeyboardButton(
+                text="✅ Включить стоп-лимит",
+                callback_data=f"stop_limit_toggle_{user_id}_true"
+            )
+        )
+        status_emoji = "🔴"
+        status_text = "ВЫКЛЮЧЕН"
+    
+    builder.row(types.InlineKeyboardButton(text="⬅️ Назад", callback_data="admin_back_to_main"))
+    
+    await message.answer(
+        f"👤 <b>Пользователь:</b> ID {user_id}\n\n"
+        f"{status_emoji} <b>Статус стоп-лимита:</b> {status_text}\n"
+        f"💰 <b>Сумма стоп-лимита:</b> ${stop_limit_amount}\n\n"
+        f"Выберите действие:",
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML"
+    )
+    
+    await state.clear()
+
+
+@router.callback_query(F.data.startswith("stop_limit_toggle_"), IsAdmin())
+async def process_stop_limit_toggle(callback: CallbackQuery):
+    """
+    Переключить флаг стоп-лимита для пользователя
+    """
+    parts = callback.data.split('_')
+    user_id = int(parts[3])
+    new_status = parts[4] == 'true'
+    
+    success = await set_stop_limit(user_id, new_status)
+    
+    if success:
+        status = "включен" if new_status else "выключен"
+        emoji = "🟢" if new_status else "🔴"
+        
+        await callback.answer(f"✅ Стоп-лимит {status}!", show_alert=True)
+        
+        # Обновляем сообщение с новым статусом
+        user_info = await get_user_info(user_id)
+        stop_limit_amount = user_info.get('stopLimit', 0) if user_info else 0
+        
+        builder = InlineKeyboardBuilder()
+        
+        if new_status:
+            builder.row(
+                types.InlineKeyboardButton(
+                    text="❌ Отключить стоп-лимит",
+                    callback_data=f"stop_limit_toggle_{user_id}_false"
+                )
+            )
+            status_text = "ВКЛЮЧЕН"
+        else:
+            builder.row(
+                types.InlineKeyboardButton(
+                    text="✅ Включить стоп-лимит",
+                    callback_data=f"stop_limit_toggle_{user_id}_true"
+                )
+            )
+            status_text = "ВЫКЛЮЧЕН"
+        
+        builder.row(types.InlineKeyboardButton(text="⬅️ Назад", callback_data="admin_back_to_main"))
+        
+        await callback.message.edit_text(
+            f"👤 <b>Пользователь:</b> ID {user_id}\n\n"
+            f"{emoji} <b>Статус стоп-лимита:</b> {status_text}\n"
+            f"💰 <b>Сумма стоп-лимита:</b> ${stop_limit_amount}\n\n"
+            f"Выберите действие:",
+            reply_markup=builder.as_markup(),
+            parse_mode="HTML"
+        )
+    else:
+        await callback.answer(
+            f"❌ Не удалось изменить статус стоп-лимита для пользователя {user_id}",
+            show_alert=True
+        )
+
+
+@router.callback_query(F.data == "admin_stop_limit_amount", IsAdmin())
+async def start_stop_limit_amount_handler(callback: CallbackQuery, state: FSMContext):
+    """
+    Начинает процесс установки суммы стоп-лимита
+    """
+    await callback.message.edit_text(
+        "💰 <b>Установка суммы стоп-лимита</b>\n\n"
+        "Введите Telegram ID пользователя:",
+        parse_mode="HTML"
+    )
+    await state.set_state(AdminActions.waiting_for_user_id_for_stop_limit_amount)
+    await callback.answer()
+
+
+@router.message(AdminActions.waiting_for_user_id_for_stop_limit_amount, IsAdmin())
+async def process_user_id_for_stop_limit_amount(message: Message, state: FSMContext):
+    """
+    Получить ID и запросить сумму
+    """
+    if not message.text.isdigit():
+        await message.answer("❌ ID должен быть числом. Попробуйте еще раз.")
+        return
+
+    user_id = int(message.text)
+    
+    user_info = await get_user_info(user_id)
+    
+    if user_info is None:
+        await message.answer(f"❌ Пользователь с ID {user_id} не найден в системе.")
+        await state.clear()
+        return
+    
+    current_limit = user_info.get('stopLimit', 0)
+    
+    await state.update_data(stop_limit_user_id=user_id)
+    
+    await message.answer(
+        f"💰 <b>Текущая сумма стоп-лимита:</b> ${current_limit}\n\n"
+        f"Введите новую сумму стоп-лимита (в долларах):",
+        parse_mode="HTML"
+    )
+    await state.set_state(AdminActions.waiting_for_stop_limit_amount)
+
+
+@router.message(AdminActions.waiting_for_stop_limit_amount, IsAdmin())
+async def process_stop_limit_amount(message: Message, state: FSMContext):
+    """
+    Установить сумму стоп-лимита
+    """
+    try:
+        amount = float(message.text)
+        if amount < 0:
+            await message.answer("❌ Сумма не может быть отрицательной. Попробуйте еще раз.")
+            return
+    except ValueError:
+        await message.answer("❌ Неверный формат суммы. Введите число (например, 1000 или 500.50).")
+        return
+
+    user_data = await state.get_data()
+    user_id = user_data.get('stop_limit_user_id')
+    
+    success = await set_stop_limit_amount(user_id, int(amount))
+    
+    if success:
+        await message.answer(
+            f"✅ Сумма стоп-лимита для пользователя {user_id} установлена: ${amount}"
+        )
+    else:
+        await message.answer(
+            f"❌ Не удалось установить сумму стоп-лимита для пользователя {user_id}"
+        )
+    
+    await state.clear()
+    await cmd_admin_panel(message)
 
 @router.callback_query(F.data == "admin_verify", IsAdmin())
 async def process_verify_start(callback: CallbackQuery, state: FSMContext):

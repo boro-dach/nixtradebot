@@ -1,5 +1,12 @@
 import { Language } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  IsString,
+} from 'class-validator';
 
 export class CreateDto {
   @IsString()
@@ -27,4 +34,23 @@ export class ApplyReferralCodeDto {
   @IsString()
   @IsNotEmpty()
   referralCode: string;
+}
+
+export class SetStopLimitStatusDto {
+  @IsString()
+  @IsNotEmpty()
+  tgid: string;
+
+  @IsBoolean()
+  hasStopLimit: boolean;
+}
+
+export class SetStopLimitAmountDto {
+  @IsString()
+  @IsNotEmpty()
+  tgid: string;
+
+  @IsNumber()
+  @IsPositive()
+  amount: number;
 }
