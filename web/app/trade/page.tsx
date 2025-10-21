@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/shared/ui/card";
 import { History, TrendingUp, Info } from "lucide-react";
 import { TradingTerminal } from "@/widgets/trading-terminal/ui/TradingTerminal";
@@ -9,8 +9,52 @@ import { Header } from "@/widgets/header/ui/header";
 
 const userId = "843961428";
 
-const TradingInfo = () => (
-  <div className="p-4 h-full overflow-auto">
+const useConfig = () => {
+  const [config, setConfig] = useState({
+    vatPercentage: 0,
+    minDeposit: 0,
+    loading: true,
+  });
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/config/all`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setConfig({
+            vatPercentage: data.config.vatPercentage || 0,
+            minDeposit: data.config.minDeposit || 0,
+            loading: false,
+          });
+        } else {
+          setConfig((prev) => ({ ...prev, loading: false }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch config:", error);
+        setConfig((prev) => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchConfig();
+
+    const interval = setInterval(fetchConfig, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return config;
+};
+
+const TradingInfo = ({
+  vatPercentage,
+  loading,
+}: {
+  vatPercentage: number;
+  loading: boolean;
+}) => (
+  <div className="p-4">
     <h2 className="text-lg font-semibold mb-4">Trading Info</h2>
     <div className="space-y-4">
       <Card>
@@ -24,14 +68,47 @@ const TradingInfo = () => (
           </ul>
         </CardContent>
       </Card>
+
       <Card>
         <CardContent className="p-4">
-          <h3 className="font-semibold mb-2">Trading Fees</h3>
-          <p className="text-sm text-muted-foreground">
-            Standard trading fee: 0.1%
-          </p>
+          <h3 className="font-semibold mb-2">Trading Fees (VAT)</h3>
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Current VAT rate:{" "}
+                <span className="font-semibold text-foreground">
+                  {vatPercentage}%
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                This fee is applied to withdrawals and trading operations
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <h3 className="font-semibold mb-2">Fee Calculation Example</h3>
+          {!loading && (
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>If you withdraw $1000:</p>
+              <p>
+                • VAT ({vatPercentage}%): $
+                {((1000 * vatPercentage) / 100).toFixed(2)}
+              </p>
+              <p>
+                • You receive: $
+                {(1000 - (1000 * vatPercentage) / 100).toFixed(2)}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardContent className="p-4">
           <h3 className="font-semibold mb-2">Risk Warning</h3>
@@ -49,9 +126,10 @@ export default function TradingPage() {
   const [activeTab, setActiveTab] = useState<"trade" | "history" | "info">(
     "trade"
   );
+  const { vatPercentage, minDeposit, loading } = useConfig();
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col bg-background">
       <Header />
 
       <div className="flex border-b bg-card">
@@ -90,10 +168,24 @@ export default function TradingPage() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      {!loading && vatPercentage > 0 && (
+        <div className="bg-muted/50 px-4 py-2 text-xs text-center border-b">
+          <span className="text-muted-foreground">
+            Current VAT:{" "}
+            <span className="font-semibold text-foreground">
+              {vatPercentage}%
+            </span>{" "}
+            • Applied to withdrawals and trades
+          </span>
+        </div>
+      )}
+
+      <div className="flex-1 ">
         {activeTab === "trade" && <TradingTerminal userId={userId} />}
         {activeTab === "history" && <TradeHistoryList userId={userId} />}
-        {activeTab === "info" && <TradingInfo />}
+        {activeTab === "info" && (
+          <TradingInfo vatPercentage={vatPercentage} loading={loading} />
+        )}
       </div>
     </div>
   );

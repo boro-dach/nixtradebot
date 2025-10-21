@@ -9,6 +9,7 @@ import { CryptocurrencyModule } from './cryptocurrency/cryptocurrency.module';
 import { BalanceModule } from './balance/balance.module';
 import { TradeModule } from './trade/trade.module';
 import { MarketModule } from './market/market.module';
+import { ConfigModule } from './config/config.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { MarketModule } from './market/market.module';
     CryptocurrencyModule,
     TradeModule,
     MarketModule,
+    ConfigModule,
   ],
   controllers: [AppController],
   providers: [AppService],

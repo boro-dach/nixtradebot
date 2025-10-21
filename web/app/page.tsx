@@ -15,7 +15,6 @@ import { DEXsVolumeWidget } from "@/widgets/dexs-volume/ui/DEXsVolume";
 import { TotalHoldersWidget } from "@/widgets/total-holders/ui/TotalHolders";
 import { getAssets } from "@/entities/asset/api/get-assets";
 
-// Типы данных
 interface Asset {
   id: string;
   symbol: string;
@@ -44,8 +43,8 @@ const Main = () => {
     stablecoinMarketCap: assets
       .filter((asset) =>
         ["usdt", "usdc", "dai", "usds", "pyusd", "usde", "bsc-usd"].includes(
-          asset.symbol.toLowerCase()
-        )
+          asset.symbol.toLowerCase(),
+        ),
       )
       .reduce((sum, asset) => sum + asset.market_cap, 0),
   };
@@ -55,7 +54,6 @@ const Main = () => {
       try {
         const data = await getAssets();
         setAssets(data);
-        // По умолчанию выбираем Ethereum
         const ethereum = data.find((asset: Asset) => asset.id === "ethereum");
         if (ethereum) {
           setSelectedAsset(ethereum);
@@ -72,7 +70,7 @@ const Main = () => {
   const filteredAssets = assets.filter(
     (asset) =>
       asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+      asset.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Форматирование цены

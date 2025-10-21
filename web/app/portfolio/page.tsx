@@ -13,9 +13,21 @@ import {
 import { useAssetPrices } from "@/entities/market/api/useAssetPrices";
 
 import { PortfolioAsset } from "@/entities/asset/model/types";
+import {
+  telegramSelectors,
+  useTelegramStore,
+} from "@/entities/telegram/model/store";
 
 const Portfolio = () => {
-  const userId = 843961428;
+  const userId = useTelegramStore(telegramSelectors.userId);
+
+  if (!userId) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
+        <p className="text-muted-foreground">User ID not found</p>
+      </div>
+    );
+  }
 
   const { balance: userBalances, isLoading: isLoadingBalance } =
     useBalance(userId);
@@ -23,7 +35,7 @@ const Portfolio = () => {
   const assetIdsToFetch = useMemo(() => {
     if (!userBalances) return [];
     return userBalances.map(
-      (asset: AssetBalance) => asset.cryptocurrency.coingeckoId
+      (asset: AssetBalance) => asset.cryptocurrency.coingeckoId,
     );
   }, [userBalances]);
 

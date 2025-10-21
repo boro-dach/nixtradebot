@@ -1,4 +1,3 @@
-// Файл: Profile.tsx
 "use client";
 import {
   telegramSelectors,
@@ -18,14 +17,22 @@ import { useAssetPrices } from "@/entities/market/api/useAssetPrices";
 const Profile = () => {
   const displayName = useTelegramStore(telegramSelectors.displayName);
   const user = useTelegramStore(telegramSelectors.user);
-  const userId = 843961428;
+  const userId = useTelegramStore(telegramSelectors.userId);
+
+  if (!userId) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
+        <p className="text-muted-foreground">User ID not found</p>
+      </div>
+    );
+  }
 
   const { balance, isLoading: isLoadingBalance } = useBalance(userId);
 
   const assetIdsToFetch = useMemo(() => {
     if (!balance) return [];
     return balance.map(
-      (asset: AssetBalance) => asset.cryptocurrency.coingeckoId
+      (asset: AssetBalance) => asset.cryptocurrency.coingeckoId,
     );
   }, [balance]);
 

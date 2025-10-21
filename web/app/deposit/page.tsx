@@ -10,6 +10,10 @@ import { Input } from "@/shared/ui/input";
 import { ChevronDown, Clipboard, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useCreateTransaction } from "@/features/transaction/api/useCreateTransaction";
+import {
+  telegramSelectors,
+  useTelegramStore,
+} from "@/entities/telegram/model/store";
 
 const addresses = {
   ethereum: "0x61F6C55caAf6D50b4c8764A17916DB6af61079ed",
@@ -31,6 +35,15 @@ const Deposit = () => {
   const [method, setMethod] = useState<keyof typeof addresses>();
   const [value, setValue] = useState<string>("");
   const { mutate, isPending } = useCreateTransaction();
+  const userId = useTelegramStore(telegramSelectors.userId);
+
+  if (!userId) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
+        <p className="text-muted-foreground">User ID not found</p>
+      </div>
+    );
+  }
 
   const handleCreateTransaction = () => {
     if (!method || !value) return;
@@ -40,7 +53,7 @@ const Deposit = () => {
       return;
     }
     mutate({
-      user_id: "6524113029",
+      user_id: userId.toString(),
       type: "DEPOSIT",
       coingeckoId: methodToCoingeckoId[method],
       amount: amount,

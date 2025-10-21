@@ -22,9 +22,22 @@ import {
   AssetBalance,
 } from "@/entities/balance/api/useTotalBalance";
 import { useExecuteSwap } from "@/entities/trade/api/useExecuteSwap";
+import {
+  telegramSelectors,
+  useTelegramStore,
+} from "@/entities/telegram/model/store";
 
 const Swap = () => {
-  const userId = "843961428";
+  const userId = useTelegramStore(telegramSelectors.userId);
+
+  // Early return if userId is undefined
+  if (!userId) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
+        <p className="text-muted-foreground">User ID not found</p>
+      </div>
+    );
+  }
 
   const { data: marketAssets, isLoading: isLoadingAssets } = useMarketAssets();
   const { balance: userBalances, isLoading: isLoadingBalances } =
@@ -42,12 +55,12 @@ const Swap = () => {
       if (!fromAsset)
         setFromAsset(
           marketAssets.find((a) => a.symbol.toLowerCase() === "usdt") ||
-            marketAssets[0]
+            marketAssets[0],
         );
       if (!toAsset)
         setToAsset(
           marketAssets.find((a) => a.symbol.toLowerCase() === "btc") ||
-            marketAssets[1]
+            marketAssets[1],
         );
     }
   }, [marketAssets, fromAsset, toAsset]);
@@ -90,7 +103,7 @@ const Swap = () => {
     if (isNaN(amount) || amount <= 0) return;
 
     executeSwap({
-      userId,
+      userId: userId.toString(),
       fromAssetCoingeckoId: fromAsset.id,
       toAssetCoingeckoId: toAsset.id,
       fromAmount: amount,
@@ -101,7 +114,7 @@ const Swap = () => {
     if (!assetId || !userBalances) return 0;
     const balance = userBalances.find(
       (b) =>
-        b.cryptocurrency.coingeckoId.toLowerCase() === assetId.toLowerCase()
+        b.cryptocurrency.coingeckoId.toLowerCase() === assetId.toLowerCase(),
     );
     return balance ? parseFloat(balance.amount) : 0;
   };

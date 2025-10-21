@@ -18,11 +18,10 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 
 const Referral = () => {
-  // const userId = useTelegramStore(telegramSelectors.userId);
-  const userId = 843961428;
+  const userId = useTelegramStore(telegramSelectors.userId);
   const { data: user, isLoading: isLoadingUser } = useUser(userId);
   const { data: referralStats, isLoading: isLoadingStats } = useReferralSummary(
-    String(userId)
+    String(userId),
   );
 
   const [inputCode, setInputCode] = useState("");
@@ -80,7 +79,7 @@ const Referral = () => {
         onSuccess: () => {
           setInputCode("");
         },
-      }
+      },
     );
   };
 

@@ -14,6 +14,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCreateTransaction } from "@/features/transaction/api/useCreateTransaction";
 import { useUser } from "@/entities/user/api/useUser";
+import {
+  telegramSelectors,
+  useTelegramStore,
+} from "@/entities/telegram/model/store";
 
 const withdrawalMethods = {
   ethereum: "Ethereum",
@@ -37,9 +41,11 @@ const Withdraw = () => {
   const [walletAddress, setWalletAddress] = useState<string>("");
   const router = useRouter();
 
-  const userId = "843961428";
+  const userId = useTelegramStore(telegramSelectors.userId);
 
-  const { data: userInfo, isLoading: isLoadingUser } = useUser(userId);
+  const { data: userInfo, isLoading: isLoadingUser } = useUser(
+    userId?.toString() ?? "",
+  );
 
   const { mutate, isPending } = useCreateTransaction({
     onSuccess: () => {
@@ -56,7 +62,7 @@ const Withdraw = () => {
   const handleCreateWithdrawal = () => {
     if (userInfo?.isBannedWithdraw) {
       alert(
-        "Вывод средств заблокирован администратором. Обратитесь в поддержку."
+        "Вывод средств заблокирован администратором. Обратитесь в поддержку.",
       );
       return;
     }
@@ -73,7 +79,7 @@ const Withdraw = () => {
     }
 
     mutate({
-      user_id: userId,
+      user_id: userId?.toString() ?? "",
       type: "WITHDRAW",
       coingeckoId: methodToCoingeckoId[method],
       amount: amount,

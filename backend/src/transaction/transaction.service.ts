@@ -20,6 +20,33 @@ export class TransactionService {
     private readonly httpService: HttpService,
   ) {}
 
+  private async getVatPercentage(): Promise<number> {
+    const config = await this.prisma.config.findUnique({
+      where: { key: 'VAT_PERCENTAGE' },
+    });
+    return config ? parseFloat(config.value) : 0;
+  }
+
+  private async calculateVat(amount: Prisma.Decimal): Promise<Prisma.Decimal> {
+    const vatPercentage = await this.getVatPercentage();
+    return amount.mul(vatPercentage).div(100);
+  }
+
+  private async applyVat(amount: Prisma.Decimal): Promise<{
+    originalAmount: Prisma.Decimal;
+    vatAmount: Prisma.Decimal;
+    finalAmount: Prisma.Decimal;
+  }> {
+    const vatAmount = await this.calculateVat(amount);
+    const finalAmount = amount.sub(vatAmount);
+
+    return {
+      originalAmount: amount,
+      vatAmount,
+      finalAmount,
+    };
+  }
+
   async create(dto: CreateTransactionDto) {
     const user = await this.prisma.user.findUnique({
       where: { tgid: dto.user_id },
@@ -78,7 +105,14 @@ export class TransactionService {
       });
     }
 
+    let finalAmount = new Prisma.Decimal(dto.amount);
+    let vatAmount = new Prisma.Decimal(0);
+
     if (dto.type === TransactionType.WITHDRAW) {
+      const vatCalculation = await this.applyVat(finalAmount);
+      vatAmount = vatCalculation.vatAmount;
+      finalAmount = vatCalculation.finalAmount;
+
       const assetBalance = await this.prisma.assetBalance.findUnique({
         where: {
           userId_cryptocurrencyId: {
@@ -102,15 +136,20 @@ export class TransactionService {
         user_id: dto.user_id,
         type: dto.type,
         cryptocurrencyId: currency.id,
-        amount: new Prisma.Decimal(dto.amount),
+        amount: finalAmount, // Сохраняем сумму после вычета НДС
       },
       include: { currency: true, user: true },
     });
+
+    const vatPercentage = await this.getVatPercentage();
 
     const notificationPayload = {
       user_id: transaction.user_id,
       crypto_name: transaction.currency.name,
       amount: transaction.amount.toString(),
+      original_amount: dto.amount.toString(),
+      vat_amount: vatAmount.toString(),
+      vat_percentage: vatPercentage,
       tx_type: transaction.type,
       transaction_id: transaction.id,
     };
@@ -129,7 +168,19 @@ export class TransactionService {
       );
     }
 
-    return transaction;
+    // Возвращаем транзакцию с информацией об НДС
+    return {
+      ...transaction,
+      vatInfo:
+        dto.type === TransactionType.WITHDRAW
+          ? {
+              originalAmount: dto.amount,
+              vatAmount: vatAmount.toNumber(),
+              vatPercentage,
+              finalAmount: finalAmount.toNumber(),
+            }
+          : null,
+    };
   }
 
   async getAll() {
@@ -363,6 +414,8 @@ export class TransactionService {
       ? new Prisma.Decimal(user.stopLimit).sub(totalWithdrawn)
       : null;
 
+    const vatPercentage = await this.getVatPercentage();
+
     return {
       totalWithdrawn: totalWithdrawn.toNumber(),
       stopLimit: user.stopLimit,
@@ -370,6 +423,21 @@ export class TransactionService {
       remainingLimit: remainingLimit ? remainingLimit.toNumber() : null,
       isBannedWithdraw: user.isBannedWithdraw,
       transactionsCount: user.transactions.length,
+      currentVatPercentage: vatPercentage,
+    };
+  }
+
+  async calculateWithdrawPreview(amount: number) {
+    const requestedAmount = new Prisma.Decimal(amount);
+    const vatCalculation = await this.applyVat(requestedAmount);
+    const vatPercentage = await this.getVatPercentage();
+
+    return {
+      requestedAmount: amount,
+      vatPercentage,
+      vatAmount: vatCalculation.vatAmount.toNumber(),
+      finalAmount: vatCalculation.finalAmount.toNumber(),
+      message: `После вычета НДС (${vatPercentage}%) вы получите: ${vatCalculation.finalAmount.toFixed(2)}`,
     };
   }
 }

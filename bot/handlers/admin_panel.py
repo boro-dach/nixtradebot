@@ -26,6 +26,7 @@ class AdminActions(StatesGroup):
     waiting_for_user_id_for_stop_limit = State()
     waiting_for_user_id_for_stop_limit_amount = State()
     waiting_for_stop_limit_amount = State()
+    waiting_for_vat_percentage = State()
 
 
 @router.message(Command("admin"), IsAdmin())
@@ -34,6 +35,72 @@ async def cmd_admin_panel(message: Message):
         "Добро пожаловать в панель администратора!",
         reply_markup=get_admin_panel_keyboard()
     )
+
+# ==================== НДС (VAT) ====================
+
+@router.callback_query(F.data == "admin_nds_setup", IsAdmin())
+async def start_vat_setup_handler(callback: CallbackQuery, state: FSMContext):
+    """
+    Начинает процесс настройки НДС
+    """
+    # Получаем текущее значение НДС из конфига или БД
+    from api.config import get_vat_percentage  # Предполагаем, что есть такая функция
+    
+    current_vat = await get_vat_percentage()
+    
+    await callback.message.edit_text(
+        f"🏦 <b>Настройка НДС (VAT)</b>\n\n"
+        f"💰 <b>Текущая ставка НДС:</b> {current_vat}%\n\n"
+        f"НДС применяется при:\n"
+        f"• Выводе средств\n"
+        f"• Обмене криптовалют\n"
+        f"• Закрытии позиций\n\n"
+        f"Введите новую ставку НДС (в процентах, например: 5 или 10.5):",
+        parse_mode="HTML"
+    )
+    await state.set_state(AdminActions.waiting_for_vat_percentage)
+    await callback.answer()
+
+
+@router.message(AdminActions.waiting_for_vat_percentage, IsAdmin())
+async def process_vat_percentage(message: Message, state: FSMContext):
+    """
+    Обрабатывает введенный процент НДС
+    """
+    try:
+        vat_percentage = float(message.text)
+        
+        if vat_percentage < 0:
+            await message.answer("❌ Ставка НДС не может быть отрицательной. Попробуйте еще раз.")
+            return
+        
+        if vat_percentage > 100:
+            await message.answer("❌ Ставка НДС не может превышать 100%. Попробуйте еще раз.")
+            return
+            
+    except ValueError:
+        await message.answer("❌ Неверный формат. Введите число (например, 5 или 10.5).")
+        return
+
+    from api.config import set_vat_percentage  # Предполагаем, что есть такая функция
+    
+    success = await set_vat_percentage(vat_percentage)
+    
+    if success:
+        await message.answer(
+            f"✅ Ставка НДС успешно установлена: {vat_percentage}%\n\n"
+            f"Новая ставка будет применяться ко всем операциям пользователей.",
+            parse_mode="HTML"
+        )
+    else:
+        await message.answer(
+            f"❌ Не удалось установить ставку НДС. Проверьте логи сервера."
+        )
+    
+    await state.clear()
+    await cmd_admin_panel(message)
+
+# ==================== СТОП-ЛИМИТ ====================
 
 @router.callback_query(F.data == "admin_stop_limit", IsAdmin())
 async def start_stop_limit_handler(callback: CallbackQuery, state: FSMContext):
@@ -240,6 +307,8 @@ async def process_stop_limit_amount(message: Message, state: FSMContext):
     
     await state.clear()
     await cmd_admin_panel(message)
+
+# ==================== ОСТАЛЬНЫЕ ФУНКЦИИ ====================
 
 @router.callback_query(F.data == "admin_verify", IsAdmin())
 async def process_verify_start(callback: CallbackQuery, state: FSMContext):
@@ -579,89 +648,5 @@ async def start_withdraw_block_handler(callback: CallbackQuery, state: FSMContex
         "Введите Telegram ID пользователя, для которого нужно управлять блокировкой вывода средств. "
         "Или отправьте /cancel для отмены."
     )
-    # Устанавливаем состояние ожидания ID
     await state.set_state(AdminActions.waiting_for_user_id_for_withdraw_block)
     await callback.answer()
-
-@router.message(AdminActions.waiting_for_user_id_for_withdraw_block, IsAdmin())
-async def process_user_id_for_withdraw_block(message: Message, state: FSMContext):
-    if not message.text.isdigit():
-        await message.answer("Ошибка: Telegram ID должен быть числом. Попробуйте еще раз.")
-        return
-
-    user_id = int(message.text)
-    
-    # Получаем полную информацию о пользователе
-    user_info = await get_user_info(user_id)
-    
-    if user_info is None:
-        await message.answer(f"❌ Пользователь с ID {user_id} не найден.")
-        await state.clear()
-        return
-    
-    is_banned = user_info.get('isBannedWithdraw', False)
-    
-    builder = InlineKeyboardBuilder()
-    if is_banned:
-        builder.row(types.InlineKeyboardButton(
-            text="✅ Разблокировать вывод",
-            callback_data=f"withdraw_toggle_{user_id}_false"
-        ))
-        status_text = "🔴 ЗАБЛОКИРОВАН"
-    else:
-        builder.row(types.InlineKeyboardButton(
-            text="❌ Заблокировать вывод",
-            callback_data=f"withdraw_toggle_{user_id}_true"
-        ))
-        status_text = "🟢 АКТИВЕН"
-        
-    builder.row(types.InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="admin_back_to_main"))
-
-    await message.answer(
-        f"Управление выводом средств для пользователя <code>{user_id}</code>\n\n"
-        f"Текущий статус: <b>{status_text}</b>\n\n"
-        "Выберите действие:",
-        reply_markup=builder.as_markup(),
-        parse_mode="HTML"
-    )
-    await state.clear()
-
-
-# Обработчик нажатия на кнопки "Заблокировать" / "Разблокировать"
-@router.callback_query(F.data.startswith("withdraw_toggle_"), IsAdmin())
-async def process_withdraw_toggle(callback: CallbackQuery):
-    """
-    Переключает флаг блокировки вывода для пользователя.
-    """
-    parts = callback.data.split('_')
-    user_id = int(parts[2])
-    new_ban_status = parts[3] == 'true'
-    
-    success = await set_withdraw_ban(user_id, new_ban_status)
-    
-    if success:
-        action_text = "заблокирован" if new_ban_status else "разблокирован"
-        await callback.answer(f"✅ Вывод средств для пользователя {user_id} {action_text}.", show_alert=True)
-        
-        # Обновляем сообщение с кнопками, чтобы показать новый статус
-        # (этот код дублирует предыдущий обработчик для обновления UI)
-        user_info = await get_user_info(user_id)
-        if user_info:
-            is_banned = user_info.get('isBannedWithdraw', False)
-            builder = InlineKeyboardBuilder()
-            if is_banned:
-                builder.row(types.InlineKeyboardButton(text="✅ Разблокировать вывод", callback_data=f"withdraw_toggle_{user_id}_false"))
-                status_text = "🔴 ЗАБЛОКИРОВАН"
-            else:
-                builder.row(types.InlineKeyboardButton(text="❌ Заблокировать вывод", callback_data=f"withdraw_toggle_{user_id}_true"))
-                status_text = "🟢 АКТИВЕН"
-            builder.row(types.InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="admin_back_to_main"))
-            await callback.message.edit_text(
-                f"Управление выводом средств для пользователя <code>{user_id}</code>\n\n"
-                f"Текущий статус: <b>{status_text}</b>\n\n"
-                "Выберите действие:",
-                reply_markup=builder.as_markup(),
-                parse_mode="HTML"
-            )
-    else:
-        await callback.answer("❌ Не удалось изменить статус блокировки вывода.", show_alert=True)
